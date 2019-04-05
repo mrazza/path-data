@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard1.5</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc" Version="1.19.0"/>
+    <PackageReference Include="Grpc.Tools" Version="1.19.0"/>
+    <PackageReference Include="Google.Protobuf" Version="3.7.0"/>
+    <PackageReference Include="Google.Protobuf.Tools" Version="3.7.0"/>
+    <PackageReference Include="Google.Api.Gax.Grpc" Version="2.7.0-beta01"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="common.proto" Link="common.proto"/>
+    <Protobuf Include="stations.proto" Link="stations.proto"/>
+    <Protobuf Include="routes.proto" Link="routes.proto"/>
+  </ItemGroup>
+</Project>

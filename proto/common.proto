@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package path_api.v1;
+
+enum Station {
+
+    STATION_UNSPECIFIED = 0;
+
+    NEWARK = 1;
+
+    HARRISON = 2;
+
+    JOURNAL_SQUARE = 3;
+
+    GROVE_STREET = 4;
+
+    EXCHANGE_PLACE = 5;
+
+    WORLD_TRADE_CENTER = 6;
+
+    NEWPORT = 7;
+
+    HOBOKEN = 8;
+
+    CHRISTOPHER_STREET = 9;
+
+    NINTH_STREET = 10;
+
+    FOURTEENTH_STREET = 11;
+
+    TWENTY_THIRD_STREET = 12;
+
+    THIRTY_THIRD_STREET = 13;
+}

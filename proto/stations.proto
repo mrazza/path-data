@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "common.proto";
+
+package path_api.v1;
+
+service Stations {
+    rpc ListStations(ListStationsRequest) returns (ListStationsResponse) {
+        option (google.api.http) = {
+            get: "/v1/stations"
+        };
+    }
+
+    rpc GetTrainSchedule(GetTrainScheduleRequest) returns (GetTrainScheduleResponse) {
+        option (google.api.http) = {
+            get: "/v1/stations/{station}/schedule"
+        };
+    }
+
+    rpc GetUpcomingTrains(GetUpcomingTrainsRequest) returns (GetUpcomingTrainsResponse) {
+        option (google.api.http) = {
+            get: "/v1/stations/{station}/realtime"
+        };
+    }
+
+    rpc GetHealth(google.protobuf.Empty) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            get: "/v1/health"
+        };
+    }
+}
+
+message ListStationsRequest {
+    int32 page_size = 1;
+
+    string page_token = 2;
+}
+
+message ListStationsResponse {
+}
+
+message GetTrainScheduleRequest {
+    Station station = 1;
+
+    int32 page_size = 2;
+
+    string page_token = 3;
+}
+
+message GetTrainScheduleResponse {
+}
+
+message GetUpcomingTrainsRequest {
+    Station station = 1;
+
+    int32 page_size = 2;
+
+    string page_token = 3;
+}
+
+message GetUpcomingTrainsResponse {
+
+    message UpcomingTrain {
+        string line_name = 1;
+    
+        repeated string line_colors = 2;
+    
+        google.protobuf.Timestamp projected_arrival = 3;
+    
+        google.protobuf.Timestamp last_updated = 4;
+    }
+
+    repeated UpcomingTrain upcoming_trains = 1;
+
+    string next_page_token = 2;
+}

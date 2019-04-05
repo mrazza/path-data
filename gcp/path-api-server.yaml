@@ -1,0 +1,84 @@
+# Server Cluster/Pod configuration for the PATH Data API.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-path-api
+spec:
+  ports:
+  - port: 80
+    targetPort: 9000
+    protocol: TCP
+    name: http2
+  selector:
+    app: path-api-app
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-path-api
+spec:
+  ports:
+  - port: 80
+    targetPort: 9001
+    protocol: TCP
+    name: http
+  selector:
+    app: path-api-app
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-path-api
+spec:
+  backend:
+    serviceName: http-path-api
+    servicePort: 80
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: path-api
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: path-api-app
+    spec:
+      containers:
+      - name: esp
+        image: gcr.io/endpoints-release/endpoints-runtime:1.30
+        args: [
+          "--http2_port=9000",   # gRPC
+          "--http_port=9001",   # HTTP
+          "--service=path-data.endpoints.path-data.cloud.goog",
+          "--rollout_strategy=managed",
+          "--backend=grpc://127.0.0.1:5001",
+          "--cors_preset=basic",
+          "--cors_allow_origin=*"
+        ]
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        livenessProbe:
+          httpGet:
+            path: "/v1/health"
+            port: 9001
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: "/v1/health"
+            port: 9001
+          initialDelaySeconds: 3
+          periodSeconds: 3
+      - name: path-api-server
+        image: gcr.io/path-data/server:v1.3
+        ports:
+        - containerPort: 5001
+        args:
+        - "--server_port=5001"
+        - "--service_bus_subscription_id=c7284d58-ba3c-4a51-9d8f-1fc201082408"

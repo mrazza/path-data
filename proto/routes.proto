@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "common.proto";
+
+package path_api.v1;
+
+service Routes {
+    rpc ListRoutes (ListRoutesRequest) returns (ListRoutesResponse) {
+    }
+}
+
+message ListRoutesRequest {
+
+}
+
+message ListRoutesResponse {
+
+}

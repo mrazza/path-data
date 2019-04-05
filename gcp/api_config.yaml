@@ -1,0 +1,34 @@
+# API Configuration for the PATH Data API
+
+# The configuration schema is defined by service.proto file
+# https://github.com/googleapis/googleapis/blob/master/google/api/service.proto
+type: google.api.Service
+config_version: 3
+
+#
+# Name of the service configuration.
+#
+name: path-data.endpoints.path-data.cloud.goog
+
+#
+# API title to appear in the user interface (Google Cloud Console).
+#
+title: PATH Data API
+apis:
+- name: path_api.v1.Stations
+
+endpoints:
+- name: path-data.endpoints.path-data.cloud.goog
+  target: "35.227.222.142"
+- name: path.api.razza.dev
+  target: "35.227.222.142"
+
+#
+# API usage restrictions.
+#
+usage:
+  rules:
+  - selector: "*"
+    allow_unregistered_calls: false
+  - selector: "path_api.v1.*"
+    allow_unregistered_calls: true
