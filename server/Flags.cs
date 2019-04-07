@@ -2,6 +2,9 @@ namespace PathApi.Server
 {
     using CommandLine;
 
+    /// <summary>
+    /// Class representing the commandline flags supported by this binary.
+    /// </summary>
     internal class Flags
     {
         #region gRPC Flags

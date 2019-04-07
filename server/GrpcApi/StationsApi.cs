@@ -1,13 +1,12 @@
 namespace PathApi.Server.GrpcApi
 {
-    using System;
-    using System.Threading.Tasks;
     using Google.Protobuf.WellKnownTypes;
     using Grpc.Core;
     using PathApi.Server.PathServices;
     using PathApi.V1;
+    using System;
     using System.Linq;
-    using Serilog;
+    using System.Threading.Tasks;
 
     internal sealed class StationsApi : Stations.StationsBase, IGrpcApi
     {

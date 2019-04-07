@@ -1,13 +1,14 @@
 namespace PathApi.Server
 {
     using System.Collections.Generic;
-    using System.Threading;
     using System.Threading.Tasks;
     using Grpc.Core;
     using PathApi.Server.GrpcApi;
-    using PathApi.V1;
     using Serilog;
 
+    /// <summary>
+    /// Represents the gRPC server exposing one or more gRPC services.
+    /// </summary>
     internal sealed class GrpcServer
     {
         private readonly Server grpcServer;
@@ -15,7 +16,11 @@ namespace PathApi.Server
         private readonly Flags flags;
         private readonly IEnumerable<IGrpcApi> services;
 
-
+        /// <summary>
+        /// Constructs a new instance of <see cref="GrpcServer"/>.
+        /// </summary>
+        /// <param name="flags">The <see cref="Flags"/> instance containing configuration data.</param>
+        /// <param name="services">The collection of gRPC services to install.</param>
         public GrpcServer(Flags flags, IEnumerable<IGrpcApi> services)
         {
             this.flags = flags;
@@ -31,6 +36,10 @@ namespace PathApi.Server
             this.latch = new TaskCompletionSource<object>();
         }
 
+        /// <summary>
+        /// Starts the gRPC server.
+        /// </summary>
+        /// <returns>A task that completes only when the gRPC server is stopped.</returns>
         public async Task Run()
         {
             Log.Logger.Here().Information("Starting gRPC server for services:");
@@ -46,6 +55,10 @@ namespace PathApi.Server
             await this.latch.Task;
         }
 
+        /// <summary>
+        /// Stops the gRPC server.
+        /// </summary>
+        /// <returns>A task that completes when the gRPC server has stopped.</returns>
         public async Task Stop()
         {
             Log.Logger.Here().Information("Stopping gRPC server...");

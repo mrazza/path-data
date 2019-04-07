@@ -1,25 +1,33 @@
 namespace PathApi.Server.PathServices
 {
-    using System;
-    using System.Threading.Tasks;
-    using System.Collections.Generic;
-    using Microsoft.Azure.ServiceBus.Management;
-    using Serilog;
-    using PathApi.V1;
     using Microsoft.Azure.ServiceBus;
-    using System.Linq;
-    using System.Collections.Concurrent;
+    using Microsoft.Azure.ServiceBus.Management;
     using Newtonsoft.Json;
+    using PathApi.V1;
+    using Serilog;
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
+    using System.Threading.Tasks;
 
+    /// <summary>
+    /// A self-updating repository containing the realtime predicted arrivals of PATH trains.
+    /// </summary>
     internal sealed class RealtimeDataRepository : IDisposable
     {
         private readonly IPathSqlDbRepository sqlDbRepository;
         private ManagementClient managementClient;
-        private ConcurrentDictionary<Station, SubscriptionClient> subscriptionClients;
-        private ConcurrentDictionary<Tuple<Station, PathDirection>, List<RealtimeData>> realtimeData;
+        private readonly ConcurrentDictionary<Station, SubscriptionClient> subscriptionClients;
+        private readonly ConcurrentDictionary<Tuple<Station, PathDirection>, List<RealtimeData>> realtimeData;
         private readonly string serviceBusSubscriptionId;
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="RealtimeDataRepository"/>.
+        /// </summary>
+        /// <param name="sqlDbRepository"></param>
+        /// <param name="flags"></param>
         public RealtimeDataRepository(IPathSqlDbRepository sqlDbRepository, Flags flags)
         {
             this.sqlDbRepository = sqlDbRepository;
@@ -29,6 +37,11 @@ namespace PathApi.Server.PathServices
             this.realtimeData = new ConcurrentDictionary<Tuple<Station, PathDirection>, List<RealtimeData>>();
         }
 
+        /// <summary>
+        /// Gets the latest realtime train arrival data for the specified station.
+        /// </summary>
+        /// <param name="station">The station to get realtime arrival data for.</param>
+        /// <returns>A collection of arriving trains.</returns>
         public IEnumerable<RealtimeData> GetRealtimeData(Station station)
         {
             return this.GetRealtimeData(station, PathDirection.ToNY).Union(this.GetRealtimeData(station, PathDirection.ToNJ));
@@ -61,7 +74,7 @@ namespace PathApi.Server.PathServices
                 {
                     try
                     {
-                        await managementClient.CreateSubscriptionAsync(station.Value, this.serviceBusSubscriptionId, new System.Threading.CancellationToken());
+                        await this.managementClient.CreateSubscriptionAsync(station.Value, this.serviceBusSubscriptionId, new System.Threading.CancellationToken());
                     }
                     catch (MessagingEntityAlreadyExistsException ex)
                     {
@@ -92,7 +105,7 @@ namespace PathApi.Server.PathServices
                 ServiceBusMessage messageBody = JsonConvert.DeserializeObject<ServiceBusMessage>(Encoding.UTF8.GetString(message.Body));
                 Tuple<Station, PathDirection> key = this.MakeKey(station, direction);
 
-                List<RealtimeData> newData = messageBody.messages.Select(realtimeMessage =>
+                List<RealtimeData> newData = messageBody.Messages.Select(realtimeMessage =>
                     new RealtimeData()
                     {
                         ExpectedArrival = realtimeMessage.LastUpdated.AddSeconds(realtimeMessage.SecondsToArrival),
@@ -145,8 +158,8 @@ namespace PathApi.Server.PathServices
 
         private sealed class ServiceBusMessage
         {
-            public string target { get; set; }
-            public List<RealtimeMessage> messages { get; set; }
+            public string Target { get; set; }
+            public List<RealtimeMessage> Messages { get; set; }
         }
 
         private sealed class RealtimeMessage

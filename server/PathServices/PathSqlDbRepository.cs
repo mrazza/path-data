@@ -1,15 +1,18 @@
 namespace PathApi.Server.PathServices
 {
-    using System.Threading;
-    using System.Threading.Tasks;
+    using Nito.AsyncEx;
     using Serilog;
+    using System;
+    using System.Data;
     using System.Data.SQLite;
     using System.IO;
-    using System.Data;
-    using System;
     using System.IO.Compression;
-    using Nito.AsyncEx;
+    using System.Threading;
+    using System.Threading.Tasks;
 
+    /// <summary>
+    /// A self-updating repository that provides access to the latest version of the PATH SQLite database.
+    /// </summary>
     internal sealed class PathSqlDbRepository : IPathSqlDbRepository, IStartupTask
     {
         private readonly Flags flags;
@@ -20,8 +23,16 @@ namespace PathApi.Server.PathServices
         private AsyncReaderWriterLock readerWriterLock;
         private readonly TimeSpan refreshTimeSpan;
 
+        /// <summary>
+        /// An event that is triggered when the PATH SQLite database is downloaded or updated.
+        /// </summary>
         public event EventHandler<EventArgs> OnDatabaseUpdate;
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="PathSqlDbRepository"/>.
+        /// </summary>
+        /// <param name="flags">The <see cref="Flags"/> instance containing the app configuration.</param>
+        /// <param name="pathApiClient">The <see cref="PathApiClient"/> to use when retrieving the latest SQLite database.</param>
         public PathSqlDbRepository(Flags flags, PathApiClient pathApiClient)
         {
             this.flags = flags;
@@ -32,6 +43,10 @@ namespace PathApi.Server.PathServices
             this.refreshTimeSpan = new TimeSpan(0, 0, this.flags.SqlUpdateCheckFrequencySecs);
         }
 
+        /// <summary>
+        /// On app start, gets the latest PATH database checksum and downloads the SQLite database.
+        /// </summary>
+        /// <returns>A task which wait for the PATH database to be loaded.</returns>
         public async Task OnStartup()
         {
             Log.Logger.Here().Information("Preparing PATH SQL repository...");
@@ -45,6 +60,10 @@ namespace PathApi.Server.PathServices
             this.updateTimer = new Timer(this.UpdateEvent, null, (int)this.refreshTimeSpan.TotalMilliseconds, (int)this.refreshTimeSpan.TotalMilliseconds);
         }
 
+        /// <summary>
+        /// Gets the encrypted service bus key from the PATH database.
+        /// </summary>
+        /// <returns>A task returning the encrypted service bus key.</returns>
         public async Task<string> GetServiceBusKey()
         {
             using (await this.readerWriterLock.ReaderLockAsync())
