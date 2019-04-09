@@ -8,22 +8,37 @@ namespace PathApi.Server.GrpcApi
     using System.Linq;
     using System.Threading.Tasks;
 
+    /// <summary>
+    /// gRPC service implementation for the Stations service.
+    /// </summary>
     internal sealed class StationsApi : Stations.StationsBase, IGrpcApi
     {
         private readonly Flags flags;
         private readonly RealtimeDataRepository realtimeDataRepository;
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="StationsApi"/>.
+        /// </summary>
+        /// <param name="flags">Flags instance containing the app configuration.</param>
+        /// <param name="realtimeDataRepository">The repository to use when looking up realtime data.</param>
         public StationsApi(Flags flags, RealtimeDataRepository realtimeDataRepository)
         {
             this.flags = flags;
             this.realtimeDataRepository = realtimeDataRepository;
         }
 
+        /// <summary>
+        /// Binds the Server service to this implementation.
+        /// </summary>
+        /// <returns>The <see cref="ServerServiceDefinition"/> for this service that can be registered with a server.</returns>
         public ServerServiceDefinition BindService()
         {
             return Stations.BindService(this);
         }
 
+        /// <summary>
+        /// Handles the GetUpcomingTrains request.
+        /// </summary>
         public override Task<GetUpcomingTrainsResponse> GetUpcomingTrains(GetUpcomingTrainsRequest request, ServerCallContext context)
         {
             if (request.Station == Station.Unspecified)
