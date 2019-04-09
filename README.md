@@ -12,4 +12,4 @@ The APIs provided by this service can be found at: https://path.api.razza.dev/
 
 You can query the API via your web browser by navigating to a valid endpoint. For example the [9th street station realtime data](https://path.api.razza.dev/v1/stations/ninth_street/realtime).
 
-A simple web app using the realtime arrival data can be found [here](https://jsfiddle.net/4h0qe98o/2/embedded/result/).
+A simple web app using the realtime arrival data can be found [here](https://jsfiddle.net/qkp7g8ze/embedded/result/).
