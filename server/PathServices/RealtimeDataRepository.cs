@@ -97,7 +97,7 @@ namespace PathApi.Server.PathServices
                 })));
         }
 
-        private async Task ProcessNewMessage(Station station, Message message)
+        private Task ProcessNewMessage(Station station, Message message)
         {
             try
             {
@@ -120,11 +120,14 @@ namespace PathApi.Server.PathServices
             {
                 Log.Logger.Here().Error(ex, $"Unexpected error reading a service bus message for {station}.");
             }
+
+            return Task.CompletedTask;
         }
 
-        private async Task HandleMessageError(Station station, ExceptionReceivedEventArgs args)
+        private Task HandleMessageError(Station station, ExceptionReceivedEventArgs args)
         {
             Log.Logger.Here().Warning(args.Exception, "Unexpected exception when handling a new Service Bus message.");
+            return Task.CompletedTask;
         }
 
         private async Task CloseExistingSubscriptions()

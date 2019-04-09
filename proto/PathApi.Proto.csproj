@@ -13,5 +13,6 @@
     <Protobuf Include="common.proto" Link="common.proto"/>
     <Protobuf Include="stations.proto" Link="stations.proto"/>
     <Protobuf Include="routes.proto" Link="routes.proto"/>
+    <Protobuf Include="server.proto" Link="server.proto"/>
   </ItemGroup>
 </Project>

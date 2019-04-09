@@ -55,7 +55,7 @@ spec:
         image: gcr.io/endpoints-release/endpoints-runtime:1.30
         args: [
           "--http2_port=9000",   # gRPC
-          "--http_port=9001",   # HTTP
+          "--http_port=9001",    # HTTP
           "--service=path-data.endpoints.path-data.cloud.goog",
           "--rollout_strategy=managed",
           "--backend=grpc://127.0.0.1:5001",
@@ -78,9 +78,9 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 3
       - name: path-api-server
-        image: gcr.io/path-data/server:v1.3
+        image: gcr.io/path-data/server:v1.4
         ports:
         - containerPort: 5001
         args:
         - "--server_port=5001"
-        - "--service_bus_subscription_id=c7284d58-ba3c-4a51-9d8f-1fc201082408"
+        - "--service_bus_subscription_id=UNIQUE_SUBSCRIBER_PER_INSTANCE"

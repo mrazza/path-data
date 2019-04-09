@@ -4,6 +4,7 @@ protoc --include_imports --include_source_info --proto_path="$HOME/.nuget/packag
 gcloud endpoints services deploy api_descriptor.pb api_config.yaml
 dotnet publish -c Release ../server
 cp Dockerfile ../server/bin/Release/netcoreapp2.2/publish
-docker build -t gcr.io/path-data/server:v1.3 ../server/bin/Release/netcoreapp2.2/publish
-gcloud docker -- push gcr.io/path-data/server:v1.3
+docker build -t gcr.io/path-data/server:v1.4 ../server/bin/Release/netcoreapp2.2/publish
+gcloud docker -- push gcr.io/path-data/server:v1.4
 kubectl apply -f path-api-server.yaml
+rm api_descriptor.pb

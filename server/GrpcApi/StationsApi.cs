@@ -24,7 +24,7 @@ namespace PathApi.Server.GrpcApi
             return Stations.BindService(this);
         }
 
-        public override async Task<GetUpcomingTrainsResponse> GetUpcomingTrains(GetUpcomingTrainsRequest request, ServerCallContext context)
+        public override Task<GetUpcomingTrainsResponse> GetUpcomingTrains(GetUpcomingTrainsRequest request, ServerCallContext context)
         {
             if (request.Station == Station.Unspecified)
             {
@@ -36,12 +36,7 @@ namespace PathApi.Server.GrpcApi
             {
                 response.UpcomingTrains.Add(entry);
             }
-            return response;
-        }
-
-        public override async Task<Empty> GetHealth(Empty request, ServerCallContext context)
-        {
-            return new Empty();
+            return Task.FromResult(response);
         }
 
         private GetUpcomingTrainsResponse.Types.UpcomingTrain ToUpcomingTrain(RealtimeData realtimeData)

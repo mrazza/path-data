@@ -1,5 +1,9 @@
 ﻿namespace PathApi.Client
 {
+    using System;
+    using Grpc.Core;
+    using PathApi.V1;
+
     class Program
     {
         static void Main(string[] args)

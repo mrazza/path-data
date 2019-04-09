@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+package path_api.v1;
+
+// Service that contains core server functionality.
+service Server {
+    // Liveness/readiness probe, used by ESP to ensure the backend is up and ready. 
+    rpc GetHealth(google.protobuf.Empty) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            get: "/v1/health"
+        };
+    }
+}

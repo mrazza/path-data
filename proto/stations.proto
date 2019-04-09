@@ -7,6 +7,7 @@ import "common.proto";
 
 package path_api.v1;
 
+// Service that provides information about PATH stations.
 service Stations {
     rpc ListStations(ListStationsRequest) returns (ListStationsResponse) {
         option (google.api.http) = {
@@ -14,66 +15,85 @@ service Stations {
         };
     }
 
+    // Gets the posted train schedule for a station.
     rpc GetTrainSchedule(GetTrainScheduleRequest) returns (GetTrainScheduleResponse) {
         option (google.api.http) = {
             get: "/v1/stations/{station}/schedule"
         };
     }
 
+    // Gets the expected upcoming trains for the station using realtime data.
     rpc GetUpcomingTrains(GetUpcomingTrainsRequest) returns (GetUpcomingTrainsResponse) {
         option (google.api.http) = {
             get: "/v1/stations/{station}/realtime"
         };
     }
-
-    rpc GetHealth(google.protobuf.Empty) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/v1/health"
-        };
-    }
 }
 
+// The request message for the list stations RPC.
 message ListStationsRequest {
+    // Optional. The maximum number of elements to return for a single request.
+    // If unspecified, the server will pick a reasonable default.
     int32 page_size = 1;
 
+    // Optional. The page token returned by the server in a previous call. Used
+    // to get the next page.
     string page_token = 2;
 }
 
+// The response message for the list stations RPC.
 message ListStationsResponse {
+    // The page token used to request the next page. Empty/unspecified if there
+    // are no more results.
+    string next_page_token = 1;
 }
 
+// The request message for the get train schedule RPC.
 message GetTrainScheduleRequest {
+    // The station for this request.
     Station station = 1;
 
+    // Optional. The maximum number of elements to return for a single request.
+    // If unspecified, the server will pick a reasonable default.
     int32 page_size = 2;
 
+    // Optional. The page token returned by the server in a previous call. Used
+    // to get the next page.
     string page_token = 3;
 }
 
+// The response message for the get train schedule RPC.
 message GetTrainScheduleResponse {
+    // The page token used to request the next page. Empty/unspecified if there
+    // are no more results.
+    string next_page_token = 1;
 }
 
+// The request message for the get upcoming (realtime) trains RPC.
 message GetUpcomingTrainsRequest {
+    // The station for this request.
     Station station = 1;
-
-    int32 page_size = 2;
-
-    string page_token = 3;
 }
 
+// The response message for the get upcoming (realtime) trains RPC.
 message GetUpcomingTrainsResponse {
-
+    // Represents a single upcoming train into the station.
     message UpcomingTrain {
+        // The name of the line for the train in question (aka headsign; e.g. Newark).
         string line_name = 1;
     
+        // The collection of colors (in HTML HEX format) that represent the train line.
+        // Usually only a single color applies (orange for JSQ/33rd) but sometimes more
+        // than one color applies (33rd via HOB).
         repeated string line_colors = 2;
     
+        // The timestamp (UTC) of the projected arrival of this train.
         google.protobuf.Timestamp projected_arrival = 3;
     
+        // The timestamp (UTC) when this projection was made.
         google.protobuf.Timestamp last_updated = 4;
     }
 
+    // The collection of upcoming trains.
     repeated UpcomingTrain upcoming_trains = 1;
-
-    string next_page_token = 2;
 }
