@@ -32,5 +32,10 @@ namespace PathApi.Server.PathServices
         /// The last time this data was updated.
         /// </summary>
         public DateTime LastUpdated { get; set; }
+
+        /// <summary>
+        /// The time at which this data is no longer considered valid.
+        /// </summary>
+        public DateTime DataExpiration { get; set; }
     }
 }

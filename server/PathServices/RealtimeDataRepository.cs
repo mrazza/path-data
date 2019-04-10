@@ -44,7 +44,7 @@ namespace PathApi.Server.PathServices
         /// <returns>A collection of arriving trains.</returns>
         public IEnumerable<RealtimeData> GetRealtimeData(Station station)
         {
-            return this.GetRealtimeData(station, PathDirection.ToNY).Union(this.GetRealtimeData(station, PathDirection.ToNJ));
+            return this.GetRealtimeData(station, PathDirection.ToNY).Union(this.GetRealtimeData(station, PathDirection.ToNJ)).Where(data => data.DataExpiration > DateTime.UtcNow);
         }
 
         private IEnumerable<RealtimeData> GetRealtimeData(Station station, PathDirection direction)
@@ -102,6 +102,7 @@ namespace PathApi.Server.PathServices
             try
             {
                 PathDirection direction = Enum.Parse<PathDirection>(message.Label, true);
+                DateTime expiration = message.ExpiresAtUtc.AddMinutes(2); // Add two minutes as a buffer.
                 ServiceBusMessage messageBody = JsonConvert.DeserializeObject<ServiceBusMessage>(Encoding.UTF8.GetString(message.Body));
                 Tuple<Station, PathDirection> key = this.MakeKey(station, direction);
 
@@ -112,7 +113,8 @@ namespace PathApi.Server.PathServices
                         ArrivalTimeMessage = realtimeMessage.ArrivalTimeMessage,
                         HeadSign = realtimeMessage.HeadSign,
                         LastUpdated = realtimeMessage.LastUpdated,
-                        LineColors = realtimeMessage.LineColor.Split(',').Where(color => !string.IsNullOrWhiteSpace(color)).ToList()
+                        LineColors = realtimeMessage.LineColor.Split(',').Where(color => !string.IsNullOrWhiteSpace(color)).ToList(),
+                        DataExpiration = expiration
                     }).ToList();
                 this.realtimeData.AddOrUpdate(key, newData, (ignored, oldData) => newData[0].LastUpdated > oldData[0].LastUpdated ? newData : oldData);
             }
