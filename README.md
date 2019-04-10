@@ -6,7 +6,11 @@ This software is not endorsed nor supported by the Port Authority of New York an
 
 # Public APIs
 
-The APIs provided by this service can be found at: https://path.api.razza.dev/
+The APIs provided by this service can be found at:
+- HTTP: https://path.api.razza.dev/...
+- gRPC: path.grpc.razza.dev (running on the default port, 443)
+
+Example HTTP URL: https://path.api.razza.dev/v1/stations/ninth_street/realtime
 
 # Demo
 
