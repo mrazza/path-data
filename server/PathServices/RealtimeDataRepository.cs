@@ -69,7 +69,7 @@ namespace PathApi.Server.PathServices
 
             var connectionString = Decryption.Decrypt(await this.sqlDbRepository.GetServiceBusKey());
             this.managementClient = new ManagementClient(connectionString);
-            await Task.WhenAll(StationData.StationToShortName.Select(station =>
+            await Task.WhenAll(StationMappings.StationToShortName.Select(station =>
                 Task.Run(async () =>
                 {
                     try

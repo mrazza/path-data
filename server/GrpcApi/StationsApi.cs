@@ -7,6 +7,7 @@ namespace PathApi.Server.GrpcApi
     using System;
     using System.Linq;
     using System.Threading.Tasks;
+    using TrainStatus = PathApi.V1.GetUpcomingTrainsResponse.Types.UpcomingTrain.Types.Status;
 
     /// <summary>
     /// gRPC service implementation for the Stations service.
@@ -43,7 +44,7 @@ namespace PathApi.Server.GrpcApi
         {
             if (request.Station == Station.Unspecified)
             {
-                throw new ArgumentException("Invalid station supplied.");
+                throw new RpcException(new Status(StatusCode.NotFound, "Invalid station supplied."));
             }
 
             var response = new GetUpcomingTrainsResponse();
@@ -54,13 +55,41 @@ namespace PathApi.Server.GrpcApi
             return Task.FromResult(response);
         }
 
+        /// <summary>
+        /// Handles the ListStations request.
+        /// </summary>
+        public override Task<ListStationsResponse> ListStations(ListStationsRequest request, ServerCallContext context)
+        {
+            throw new RpcException(new Status(StatusCode.Unimplemented, "Method not yet implemented."));
+        }
+
+        /// <summary>
+        /// Handles the GetStation request.
+        /// </summary>
+        public override Task<StationData> GetStation(GetStationRequest request, ServerCallContext context)
+        {
+            throw new RpcException(new Status(StatusCode.Unimplemented, "Method not yet implemented."));
+        }
+
         private GetUpcomingTrainsResponse.Types.UpcomingTrain ToUpcomingTrain(RealtimeData realtimeData)
         {
+            TrainStatus status = TrainStatus.OnTime;
+
+            if (realtimeData.ArrivalTimeMessage.Trim().Equals("0 min", StringComparison.InvariantCultureIgnoreCase))
+            {
+                status = TrainStatus.ArrivingNow;
+            }
+            else if (realtimeData.ArrivalTimeMessage.Trim().Equals("Delayed", StringComparison.InvariantCultureIgnoreCase))
+            {
+                status = TrainStatus.Delayed;
+            }
+
             var upcomingTrain = new GetUpcomingTrainsResponse.Types.UpcomingTrain()
             {
                 LineName = realtimeData.HeadSign,
                 ProjectedArrival = this.ToTimestamp(realtimeData.ExpectedArrival),
                 LastUpdated = this.ToTimestamp(realtimeData.LastUpdated),
+                Status = status
             };
             upcomingTrain.LineColors.Add(realtimeData.LineColors);
             return upcomingTrain;

@@ -6,7 +6,7 @@ namespace PathApi.Server.GrpcApi
     using Server = PathApi.V1.Server;
 
     /// <summary>
-    // gRPC Service implementation for the Server service.
+    // gRPC service implementation for the Server service.
     /// </summary>
     internal sealed class ServerApi : Server.ServerBase, IGrpcApi
     {

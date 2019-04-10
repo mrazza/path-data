@@ -7,7 +7,7 @@ namespace PathApi.Server.PathServices
     /// <summary>
     /// Various PATH station metadata.
     /// </summary>
-    internal static class StationData
+    internal static class StationMappings
     {
         /// <summary>
         /// Dictionary mapping <see cref="Station"/> enums to short string values used by PATH.
@@ -28,6 +28,24 @@ namespace PathApi.Server.PathServices
                 { Station.FourteenthStreet, "14s" },
                 { Station.TwentyThirdStreet, "23s" },
                 { Station.ThirtyThirdStreet, "33s" }
+            });
+
+        public static readonly ReadOnlyDictionary<Station, int> StationToDatabaseId =
+            new ReadOnlyDictionary<Station, int>(new Dictionary<Station, int>()
+            {
+                { Station.Newark, 26733 },
+                { Station.Harrison, 26729 },
+                { Station.JournalSquare, 26731 },
+                { Station.GroveStreet, 26728 },
+                { Station.ExchangePlace, 26727 },
+                { Station.Newport, 26732 },
+                { Station.Hoboken, 26730 },
+                { Station.WorldTradeCenter, 26734 },
+                { Station.ThirtyThirdStreet, 26724 },
+                { Station.TwentyThirdStreet, 26723 },
+                { Station.FourteenthStreet, 26722 },
+                { Station.NinthStreet, 26725 },
+                { Station.ChristopherStreet, 26726 }
             });
     }
 }
