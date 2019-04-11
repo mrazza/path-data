@@ -15,6 +15,18 @@
                 Station = Station.GroveStreet
             });
             Console.WriteLine(reply.ToString());
+            Console.WriteLine();
+
+            var reply2 = client.GetStation(new GetStationRequest()
+            {
+                Station = Station.GroveStreet
+            });
+            Console.WriteLine(reply2.ToString());
+            Console.WriteLine();
+
+            var reply3 = client.ListStations(new ListStationsRequest());
+            Console.WriteLine(reply3.ToString());
+            Console.WriteLine();
 
             channel.ShutdownAsync().Wait();
         }

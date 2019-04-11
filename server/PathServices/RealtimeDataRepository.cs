@@ -3,6 +3,7 @@ namespace PathApi.Server.PathServices
     using Microsoft.Azure.ServiceBus;
     using Microsoft.Azure.ServiceBus.Management;
     using Newtonsoft.Json;
+    using PathApi.Server.PathServices.Models;
     using PathApi.V1;
     using Serilog;
     using System;

@@ -5,6 +5,7 @@ namespace PathApi.Server
     using Grpc.Core;
     using PathApi.Server.GrpcApi;
     using Serilog;
+    using Grpc.Core.Interceptors;
 
     /// <summary>
     /// Represents the gRPC server exposing one or more gRPC services.
@@ -31,7 +32,7 @@ namespace PathApi.Server
             };
             foreach (var service in services)
             {
-                this.grpcServer.Services.Add(service.BindService());
+                this.grpcServer.Services.Add(service.BindService().Intercept(new GrpcExceptionInterceptor(service)));
             }
             this.latch = new TaskCompletionSource<object>();
         }

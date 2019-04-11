@@ -1,12 +1,16 @@
 namespace PathApi.Server.PathServices
 {
     using Nito.AsyncEx;
+    using PathApi.Server.PathServices.Models;
+    using PathApi.V1;
     using Serilog;
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Data.SQLite;
     using System.IO;
     using System.IO.Compression;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -73,6 +77,44 @@ namespace PathApi.Server.PathServices
                 command.CommandText = $"SELECT configuration_value FROM tblConfigurationData WHERE configuration_key = @key;";
                 command.Parameters.Add(new SQLiteParameter("@key", this.flags.ServiceBusConfigurationKeyName));
                 return (string)await command.ExecuteScalarAsync();
+            }
+        }
+
+        /// <summary>
+        /// Gets information about the specified station.
+        /// </summary>
+        /// <returns>A task returning the station information for the specified station.</returns>
+        public async Task<List<Stop>> GetStops(Station station)
+        {
+            if (station == Station.Unspecified)
+            {
+                throw new ArgumentException("Station must be specified.");
+            }
+
+            using (await this.readerWriterLock.ReaderLockAsync())
+            {
+                this.AssertConnected();
+                SQLiteCommand command = this.sqliteConnection.CreateCommand();
+                command.CommandText = $"SELECT stop_id, stop_name, stop_lat, stop_lon, location_type, parent_station, stop_timezone FROM tblStops WHERE stop_id = @stop_id OR parent_station = @stop_id;";
+                command.Parameters.Add(new SQLiteParameter("@stop_id", StationMappings.StationToDatabaseId[station]));
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    List<Stop> stops = new List<Stop>();
+                    while (await reader.ReadAsync())
+                    {
+                        stops.Add(new Stop()
+                        {
+                            Id = reader.GetString(0),
+                            Name = reader.GetString(1),
+                            Latitude = double.Parse(reader.GetString(2)),
+                            Longitude = double.Parse(reader.GetString(3)),
+                            LocationType = (LocationType)int.Parse(reader.GetString(4)),
+                            ParentStopId = reader.GetString(5),
+                            Timezone = reader.GetString(6)
+                        });
+                    }
+                    return stops;
+                }
             }
         }
 

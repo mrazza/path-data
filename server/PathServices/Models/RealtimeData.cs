@@ -1,4 +1,4 @@
-namespace PathApi.Server.PathServices
+namespace PathApi.Server.PathServices.Models
 {
     using System;
     using System.Collections.Generic;

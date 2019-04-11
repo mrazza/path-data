@@ -1,10 +1,13 @@
 namespace PathApi.Server.GrpcApi
 {
     using Google.Protobuf.WellKnownTypes;
+    using Google.Type;
     using Grpc.Core;
     using PathApi.Server.PathServices;
+    using PathApi.Server.PathServices.Models;
     using PathApi.V1;
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
     using TrainStatus = PathApi.V1.GetUpcomingTrainsResponse.Types.UpcomingTrain.Types.Status;
@@ -14,18 +17,21 @@ namespace PathApi.Server.GrpcApi
     /// </summary>
     internal sealed class StationsApi : Stations.StationsBase, IGrpcApi
     {
+        private const int DEFUALT_PAGE_SIZE = 250;
         private readonly Flags flags;
         private readonly RealtimeDataRepository realtimeDataRepository;
+        private readonly IPathSqlDbRepository sqlDbRepository;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="StationsApi"/>.
         /// </summary>
         /// <param name="flags">Flags instance containing the app configuration.</param>
         /// <param name="realtimeDataRepository">The repository to use when looking up realtime data.</param>
-        public StationsApi(Flags flags, RealtimeDataRepository realtimeDataRepository)
+        public StationsApi(Flags flags, RealtimeDataRepository realtimeDataRepository, IPathSqlDbRepository sqlDbRepository)
         {
             this.flags = flags;
             this.realtimeDataRepository = realtimeDataRepository;
+            this.sqlDbRepository = sqlDbRepository;
         }
 
         /// <summary>
@@ -58,17 +64,79 @@ namespace PathApi.Server.GrpcApi
         /// <summary>
         /// Handles the ListStations request.
         /// </summary>
-        public override Task<ListStationsResponse> ListStations(ListStationsRequest request, ServerCallContext context)
+        public override async Task<ListStationsResponse> ListStations(ListStationsRequest request, ServerCallContext context)
         {
-            throw new RpcException(new Status(StatusCode.Unimplemented, "Method not yet implemented."));
+            int offset = PaginationHelper.GetOffset(request.PageToken);
+            int pageSize = request.PageSize == 0 ? DEFUALT_PAGE_SIZE : request.PageSize;
+
+            ListStationsResponse response = new ListStationsResponse();
+            List<StationData> stations = new List<StationData>();
+            foreach (var station in (System.Enum.GetValues(typeof(Station)) as Station[]).Where((station) => station != Station.Unspecified))
+            {
+                var stops = await this.sqlDbRepository.GetStops(station);
+                stations.Add(this.ToStation(station, stops));
+            }
+            response.Stations.Add(stations.Skip(offset).Take(pageSize));
+            if (stations.Count > offset + pageSize)
+            {
+                response.NextPageToken = PaginationHelper.GetPageToken(offset + pageSize);
+            }
+            return response;
         }
 
         /// <summary>
         /// Handles the GetStation request.
         /// </summary>
-        public override Task<StationData> GetStation(GetStationRequest request, ServerCallContext context)
+        public override async Task<StationData> GetStation(GetStationRequest request, ServerCallContext context)
         {
-            throw new RpcException(new Status(StatusCode.Unimplemented, "Method not yet implemented."));
+            if (request.Station == Station.Unspecified)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, "Invalid station supplied."));
+            }
+
+            var stops = await this.sqlDbRepository.GetStops(request.Station);
+            return this.ToStation(request.Station, stops);
+        }
+
+        private StationData ToStation(Station station, List<Stop> stops)
+        {
+            var parentStop = stops.Where(stop => stop.LocationType == LocationType.Station).Single();
+            var stationData = new StationData()
+            {
+                Station = station,
+                Id = parentStop.Id,
+                Name = parentStop.Name,
+                Coordinates = new LatLng()
+                {
+                    Latitude = parentStop.Latitude,
+                    Longitude = parentStop.Longitude
+                },
+                Timezone = parentStop.Timezone,
+            };
+            stationData.Platforms.Add(stops.Where(stop => stop.LocationType == LocationType.Platform)
+                .Select(platform => new StationData.Types.Area()
+                {
+                    Id = platform.Id,
+                    Name = platform.Name,
+                    Coordinates = new LatLng()
+                    {
+                        Latitude = platform.Latitude,
+                        Longitude = platform.Longitude
+                    }
+                }));
+            stationData.Entrences.Add(stops.Where(stop => stop.LocationType == LocationType.Entrence)
+                .Select(platform => new StationData.Types.Area()
+                {
+                    Id = platform.Id,
+                    Name = platform.Name,
+                    Coordinates = new LatLng()
+                    {
+                        Latitude = platform.Latitude,
+                        Longitude = platform.Longitude
+                    }
+                }));
+
+            return stationData;
         }
 
         private GetUpcomingTrainsResponse.Types.UpcomingTrain ToUpcomingTrain(RealtimeData realtimeData)

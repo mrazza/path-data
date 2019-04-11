@@ -149,9 +149,9 @@ message StationData {
     // The geographic coordinates (lat/lon) of this station.
     google.type.LatLng coordinates = 4;
 
-    // Represents a platform/track within a station.
+    // Represents a platform/track/entrence area within a station.
     // Representing GTFS stops with location_type of 0 and a parent_station.
-    message Platform {
+    message Area {
         // The ID (stop_id) of this platform.
         string id = 1;
 
@@ -163,8 +163,11 @@ message StationData {
     }
 
     // Collection of platforms/tracks within the station.
-    repeated Platform platforms = 6;
+    repeated Area platforms = 6;
+
+    // Collection of entrences to the station.
+    repeated Area entrences = 7;
 
     // The timezone in which this station is located.
-    string timezone = 7;
+    string timezone = 8;
 }
