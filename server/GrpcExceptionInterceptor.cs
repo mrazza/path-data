@@ -7,6 +7,9 @@ namespace PathApi.Server
     using PathApi.Server.GrpcApi;
     using Serilog;
 
+    /// <summary>
+    /// gRPC interceptor to log unexpected exceptions thrown by API implementations.
+    /// </summary>
     internal sealed class GrpcExceptionInterceptor : Interceptor
     {
         private readonly Type type;
@@ -21,6 +24,10 @@ namespace PathApi.Server
             try
             {
                 return await continuation.Invoke(request, context);
+            }
+            catch (RpcException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
