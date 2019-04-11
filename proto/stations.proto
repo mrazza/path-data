@@ -10,12 +10,14 @@ package path_api.v1;
 
 // Service that provides information about PATH stations.
 service Stations {
+    // Lists the metadata for all available stations.
     rpc ListStations(ListStationsRequest) returns (ListStationsResponse) {
         option (google.api.http) = {
             get: "/v1/stations"
         };
     }
 
+    // Gets the metadata for a specific station.
     rpc GetStation(GetStationRequest) returns (StationData) {
         option (google.api.http) = {
             get: "/v1/stations/{station}"
