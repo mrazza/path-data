@@ -167,8 +167,8 @@ message StationData {
     // Collection of platforms/tracks within the station.
     repeated Area platforms = 6;
 
-    // Collection of entrences to the station.
-    repeated Area entrences = 7;
+    // Collection of entrances to the station.
+    repeated Area entrances = 7;
 
     // The timezone in which this station is located.
     string timezone = 8;

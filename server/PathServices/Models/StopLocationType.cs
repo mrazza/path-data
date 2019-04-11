@@ -7,6 +7,6 @@ namespace PathApi.Server.PathServices.Models
     {
         Platform = 0,
         Station = 1,
-        Entrence = 2
+        Entrance = 2
     }
 }

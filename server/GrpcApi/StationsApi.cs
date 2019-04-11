@@ -124,7 +124,7 @@ namespace PathApi.Server.GrpcApi
                         Longitude = platform.Longitude
                     }
                 }));
-            stationData.Entrences.Add(stops.Where(stop => stop.LocationType == LocationType.Entrence)
+            stationData.Entrances.Add(stops.Where(stop => stop.LocationType == LocationType.Entrance)
                 .Select(platform => new StationData.Types.Area()
                 {
                     Id = platform.Id,
