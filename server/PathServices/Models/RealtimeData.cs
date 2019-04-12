@@ -24,9 +24,9 @@ namespace PathApi.Server.PathServices.Models
         public List<string> LineColors { get; set; }
 
         /// <summary>
-        /// The head sign for the train (think train name).
+        /// The headsign for the train (think train name).
         /// </summary>
-        public string HeadSign { get; set; }
+        public string Headsign { get; set; }
 
         /// <summary>
         /// The last time this data was updated.
@@ -37,5 +37,10 @@ namespace PathApi.Server.PathServices.Models
         /// The time at which this data is no longer considered valid.
         /// </summary>
         public DateTime DataExpiration { get; set; }
+
+        /// <summary>
+        /// The route this train operates on.
+        /// </summary>
+        public RouteLine Route { get; set; }
     }
 }

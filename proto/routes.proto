@@ -1,21 +1,83 @@
 syntax = "proto3";
 
-import "google/protobuf/timestamp.proto";
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "common.proto";
 
 package path_api.v1;
 
 service Routes {
-    rpc ListRoutes (ListRoutesRequest) returns (ListRoutesResponse) {
+    rpc ListRoutes(ListRoutesRequest) returns (ListRoutesResponse) {
+        option (google.api.http) = {
+            get: "/v1/routes"
+        };
+    }
+
+    rpc GetRoute(GetRouteRequest) returns (RouteData) {
+        option (google.api.http) = {
+            get: "/v1/routes/{route}"
+        };
+    }
+
+    rpc GetRouteSchedule(GetRouteScheduleRequest) returns (GetRouteScheduleResponse) {
+        option (google.api.http) = {
+            get: "/v1/routes/{route}/schedule"
+        };
     }
 }
 
 message ListRoutesRequest {
+    // Optional. The maximum number of elements to return for a single request.
+    // If unspecified, the server will pick a reasonable default.
+    int32 page_size = 1;
 
+    // Optional. The page token returned by the server in a previous call. Used
+    // to get the next page.
+    string page_token = 2;
 }
 
 message ListRoutesResponse {
+    repeated RouteData routes = 1;
 
+    string next_page_token = 2;
 }
+
+message GetRouteRequest {
+    Route route = 1;
+}
+
+message GetRouteScheduleRequest {
+    Route route = 1;
+
+    // Optional. The maximum number of elements to return for a single request.
+    // If unspecified, the server will pick a reasonable default.
+    int32 page_size = 2;
+
+    // Optional. The page token returned by the server in a previous call. Used
+    // to get the next page.
+    string page_token = 3;
+}
+
+message GetRouteScheduleResponse {
+    string next_page_token = 1;
+}
+
+message RouteData {
+
+    Route route = 1;
+
+    string name = 2;
+
+    message RouteLine {
+
+        string display_name = 1;
+
+        string headsign = 2;
+
+        string color = 3;
+
+        Direction direction = 4;
+    }
+
+    repeated RouteLine lines = 3;
+}
+

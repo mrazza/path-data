@@ -17,7 +17,7 @@ namespace PathApi.Server.PathServices
     /// <summary>
     /// A self-updating repository that provides access to the latest version of the PATH SQLite database.
     /// </summary>
-    internal sealed class PathSqlDbRepository : IPathSqlDbRepository, IStartupTask
+    internal sealed class PathSqlDbRepository : IPathDataRepository, IStartupTask
     {
         private readonly Flags flags;
         private readonly PathApiClient pathApiClient;
@@ -30,7 +30,7 @@ namespace PathApi.Server.PathServices
         /// <summary>
         /// An event that is triggered when the PATH SQLite database is downloaded or updated.
         /// </summary>
-        public event EventHandler<EventArgs> OnDatabaseUpdate;
+        public event EventHandler<EventArgs> OnDataUpdate;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="PathSqlDbRepository"/>.
@@ -74,7 +74,7 @@ namespace PathApi.Server.PathServices
             {
                 this.AssertConnected();
                 SQLiteCommand command = this.sqliteConnection.CreateCommand();
-                command.CommandText = $"SELECT configuration_value FROM tblConfigurationData WHERE configuration_key = @key;";
+                command.CommandText = "SELECT configuration_value FROM tblConfigurationData WHERE configuration_key = @key;";
                 command.Parameters.Add(new SQLiteParameter("@key", this.flags.ServiceBusConfigurationKeyName));
                 return (string)await command.ExecuteScalarAsync();
             }
@@ -88,14 +88,14 @@ namespace PathApi.Server.PathServices
         {
             if (station == Station.Unspecified)
             {
-                throw new ArgumentException("Station must be specified.");
+                throw new ArgumentException("Station must be specified.", nameof(station));
             }
 
             using (await this.readerWriterLock.ReaderLockAsync())
             {
                 this.AssertConnected();
                 SQLiteCommand command = this.sqliteConnection.CreateCommand();
-                command.CommandText = $"SELECT stop_id, stop_name, stop_lat, stop_lon, location_type, parent_station, stop_timezone FROM tblStops WHERE stop_id = @stop_id OR parent_station = @stop_id;";
+                command.CommandText = "SELECT stop_id, stop_name, stop_lat, stop_lon, location_type, parent_station, stop_timezone FROM tblStops WHERE stop_id = @stop_id OR parent_station = @stop_id;";
                 command.Parameters.Add(new SQLiteParameter("@stop_id", StationMappings.StationToDatabaseId[station]));
                 using (var reader = await command.ExecuteReaderAsync())
                 {
@@ -114,6 +114,54 @@ namespace PathApi.Server.PathServices
                         });
                     }
                     return stops;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets a route from the specified headsign name and color pair.
+        /// </summary>
+        /// <returns>A task returning the route for the specified train.</returns>
+        public async Task<RouteLine> GetRouteFromTrainHeadsign(string headsignName, string headsignColor)
+        {
+            if (string.IsNullOrWhiteSpace(headsignName))
+            {
+                throw new ArgumentException("Headsign must be specified.", nameof(headsignName));
+            }
+            else if (string.IsNullOrWhiteSpace(headsignColor))
+            {
+                throw new ArgumentException("Headsign color must be specified.", nameof(headsignColor));
+            }
+
+            // Input colors are likely to be prefixed with a #. They are not in the SQL database.
+            headsignColor = headsignColor.Trim('#');
+
+            using (await this.readerWriterLock.ReaderLockAsync())
+            {
+                this.AssertConnected();
+                SQLiteCommand command = this.sqliteConnection.CreateCommand();
+                command.CommandText = "SELECT route_id, route_long_name, route_display_name, trip_headsign, route_color, direction_id FROM Schedule WHERE trip_headsign = @headsign COLLATE NOCASE AND route_color = @color COLLATE NOCASE LIMIT 1;";
+                command.Parameters.Add(new SQLiteParameter("@headsign", headsignName));
+                command.Parameters.Add(new SQLiteParameter("@color", headsignColor));
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return new RouteLine()
+                        {
+                            Route = RouteMappings.DatabaseIdToRoute[reader.GetString(0)],
+                            Id = reader.GetString(0),
+                            LongName = reader.GetString(1),
+                            DisplayName = reader.GetString(2),
+                            Headsign = reader.GetString(3),
+                            Color = reader.GetString(4),
+                            Direction = (RouteDirection)int.Parse(reader.GetString(5))
+                        };
+                    }
+                    else
+                    {
+                        throw new KeyNotFoundException($"Could not find route with headsign={headsignName} and color={headsignColor}.");
+                    }
                 }
             }
         }
@@ -147,7 +195,7 @@ namespace PathApi.Server.PathServices
 
         private void InvokeUpdateEvent()
         {
-            var updateEvent = this.OnDatabaseUpdate;
+            var updateEvent = this.OnDataUpdate;
             if (updateEvent != null)
             {
                 updateEvent.Invoke(this, new EventArgs());

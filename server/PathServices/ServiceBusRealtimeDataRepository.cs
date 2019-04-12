@@ -16,26 +16,24 @@ namespace PathApi.Server.PathServices
     /// <summary>
     /// A self-updating repository containing the realtime predicted arrivals of PATH trains.
     /// </summary>
-    internal sealed class RealtimeDataRepository : IDisposable
+    internal sealed class ServiceBusRealtimeDataRepository : IRealtimeDataRepository, IDisposable
     {
-        private readonly IPathSqlDbRepository sqlDbRepository;
+        private readonly IPathDataRepository pathDataRepository;
         private ManagementClient managementClient;
         private readonly ConcurrentDictionary<Station, SubscriptionClient> subscriptionClients;
-        private readonly ConcurrentDictionary<Tuple<Station, PathDirection>, List<RealtimeData>> realtimeData;
+        private readonly ConcurrentDictionary<Tuple<Station, RouteDirection>, List<RealtimeData>> realtimeData;
         private readonly string serviceBusSubscriptionId;
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="RealtimeDataRepository"/>.
+        /// Constructs a new instance of the <see cref="ServiceBusRealtimeDataRepository"/>.
         /// </summary>
-        /// <param name="sqlDbRepository"></param>
-        /// <param name="flags"></param>
-        public RealtimeDataRepository(IPathSqlDbRepository sqlDbRepository, Flags flags)
+        public ServiceBusRealtimeDataRepository(IPathDataRepository pathDataRepository, Flags flags)
         {
-            this.sqlDbRepository = sqlDbRepository;
+            this.pathDataRepository = pathDataRepository;
             this.serviceBusSubscriptionId = flags.ServiceBusSubscriptionId ?? Guid.NewGuid().ToString();
-            this.sqlDbRepository.OnDatabaseUpdate += this.PathSqlDbUpdated;
+            this.pathDataRepository.OnDataUpdate += this.PathSqlDbUpdated;
             this.subscriptionClients = new ConcurrentDictionary<Station, SubscriptionClient>();
-            this.realtimeData = new ConcurrentDictionary<Tuple<Station, PathDirection>, List<RealtimeData>>();
+            this.realtimeData = new ConcurrentDictionary<Tuple<Station, RouteDirection>, List<RealtimeData>>();
         }
 
         /// <summary>
@@ -43,19 +41,19 @@ namespace PathApi.Server.PathServices
         /// </summary>
         /// <param name="station">The station to get realtime arrival data for.</param>
         /// <returns>A collection of arriving trains.</returns>
-        public IEnumerable<RealtimeData> GetRealtimeData(Station station)
+        public Task<IEnumerable<RealtimeData>> GetRealtimeData(Station station)
         {
-            return this.GetRealtimeData(station, PathDirection.ToNY).Union(this.GetRealtimeData(station, PathDirection.ToNJ)).Where(data => data.DataExpiration > DateTime.UtcNow);
+            return Task.FromResult(this.GetRealtimeData(station, RouteDirection.ToNY).Union(this.GetRealtimeData(station, RouteDirection.ToNJ)).Where(data => data.DataExpiration > DateTime.UtcNow));
         }
 
-        private IEnumerable<RealtimeData> GetRealtimeData(Station station, PathDirection direction)
+        private IEnumerable<RealtimeData> GetRealtimeData(Station station, RouteDirection direction)
         {
             return this.realtimeData.GetValueOrDefault(this.MakeKey(station, direction), new List<RealtimeData>());
         }
 
-        private Tuple<Station, PathDirection> MakeKey(Station station, PathDirection direction)
+        private Tuple<Station, RouteDirection> MakeKey(Station station, RouteDirection direction)
         {
-            return new Tuple<Station, PathDirection>(station, direction);
+            return new Tuple<Station, RouteDirection>(station, direction);
         }
 
         private void PathSqlDbUpdated(object sender, EventArgs args)
@@ -68,7 +66,7 @@ namespace PathApi.Server.PathServices
         {
             await this.CloseExistingSubscriptions();
 
-            var connectionString = Decryption.Decrypt(await this.sqlDbRepository.GetServiceBusKey());
+            var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey());
             this.managementClient = new ManagementClient(connectionString);
             await Task.WhenAll(StationMappings.StationToShortName.Select(station =>
                 Task.Run(async () =>
@@ -98,33 +96,45 @@ namespace PathApi.Server.PathServices
                 })));
         }
 
-        private Task ProcessNewMessage(Station station, Message message)
+        private async Task ProcessNewMessage(Station station, Message message)
         {
             try
             {
-                PathDirection direction = Enum.Parse<PathDirection>(message.Label, true);
+                RouteDirection direction = Enum.Parse<RouteDirection>(message.Label, true);
                 DateTime expiration = message.ExpiresAtUtc.AddMinutes(2); // Add two minutes as a buffer.
                 ServiceBusMessage messageBody = JsonConvert.DeserializeObject<ServiceBusMessage>(Encoding.UTF8.GetString(message.Body));
-                Tuple<Station, PathDirection> key = this.MakeKey(station, direction);
+                Tuple<Station, RouteDirection> key = this.MakeKey(station, direction);
 
-                List<RealtimeData> newData = messageBody.Messages.Select(realtimeMessage =>
-                    new RealtimeData()
+                List<RealtimeData> newData = (await Task.WhenAll(messageBody.Messages.Select(async realtimeMessage =>
+                {
+                    var realtimeData = new RealtimeData()
                     {
                         ExpectedArrival = realtimeMessage.LastUpdated.AddSeconds(realtimeMessage.SecondsToArrival),
                         ArrivalTimeMessage = realtimeMessage.ArrivalTimeMessage,
-                        HeadSign = realtimeMessage.HeadSign,
+                        Headsign = realtimeMessage.Headsign,
                         LastUpdated = realtimeMessage.LastUpdated,
                         LineColors = realtimeMessage.LineColor.Split(',').Where(color => !string.IsNullOrWhiteSpace(color)).ToList(),
                         DataExpiration = expiration
-                    }).ToList();
+                    };
+
+                    RouteLine route = null;
+                    try
+                    {
+                        route = await this.pathDataRepository.GetRouteFromTrainHeadsign(realtimeData.Headsign, realtimeData.LineColors.First());
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Logger.Here().Warning(ex, "Failed to lookup route during realtime message update.");
+                    }
+                    realtimeData.Route = route;
+                    return realtimeData;
+                }))).ToList();
                 this.realtimeData.AddOrUpdate(key, newData, (ignored, oldData) => newData[0].LastUpdated > oldData[0].LastUpdated ? newData : oldData);
             }
             catch (Exception ex)
             {
                 Log.Logger.Here().Error(ex, $"Unexpected error reading a service bus message for {station}.");
             }
-
-            return Task.CompletedTask;
         }
 
         private Task HandleMessageError(Station station, ExceptionReceivedEventArgs args)
@@ -148,7 +158,7 @@ namespace PathApi.Server.PathServices
             {
                 if (disposing)
                 {
-                    this.sqlDbRepository.OnDatabaseUpdate -= this.PathSqlDbUpdated;
+                    this.pathDataRepository.OnDataUpdate -= this.PathSqlDbUpdated;
                     Task.Run(this.CloseExistingSubscriptions).Wait();
                 }
                 disposedValue = true;
@@ -175,7 +185,7 @@ namespace PathApi.Server.PathServices
             public string LineColor { get; set; }
             public string SecondaryColor { get; set; }
             public string ViaStation { get; set; }
-            public string HeadSign { get; set; }
+            public string Headsign { get; set; }
             public DateTime LastUpdated { get; set; }
             public DateTime DepartureTime { get; set; }
         }

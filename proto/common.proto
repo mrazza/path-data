@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package path_api.v1;
 
+// Full list of all PATH stations in the system.
 enum Station {
 
     STATION_UNSPECIFIED = 0;
@@ -31,4 +32,35 @@ enum Station {
     TWENTY_THIRD_STREET = 12;
 
     THIRTY_THIRD_STREET = 13;
+}
+
+// Full list of all routes within the system.
+enum Route {
+
+    ROUTE_UNSPECIFIED = 0;
+
+    // Journal Square to 33rd Street via Hoboken
+    JSQ_33_HOB = 1;
+
+    // Hoboken to 33rd Street
+    HOB_33 = 2;
+
+    // Hoboken to World Trade Center
+    HOB_WTC = 3;
+
+    // Journal Square to 33rd Street
+    JSQ_33 = 4;
+
+    // Newark to World Trade Center
+    NWK_WTC = 5;
+}
+
+// Directions trains can travel along routes.
+enum Direction {
+
+    DIRECTION_UNSPECIFIED = 0;
+
+    TO_NJ = 1;
+
+    TO_NY = 2;
 }
