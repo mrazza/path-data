@@ -180,6 +180,7 @@ namespace PathApi.Server.PathServices
                     {
                         Log.Logger.Here().Information("PATH SQLite DB update needed.");
                         updateNeeded = true;
+                        this.latestChecksum = newChecksum;
                         this.sqliteConnection.Close();
                         this.sqliteConnection.Dispose();
                         await this.DownloadDatabase();
