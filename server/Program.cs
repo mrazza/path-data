@@ -32,8 +32,8 @@
                 Container container = new Container();
                 container.RegisterSingleton<PathApiClient>();
                 container.RegisterSingleton<PathSqlDbRepository>();
-                container.RegisterSingleton<IPathSqlDbRepository, PathSqlDbRepository>();
-                container.RegisterSingleton<RealtimeDataRepository>();
+                container.RegisterSingleton<IPathDataRepository, PathSqlDbRepository>();
+                container.RegisterSingleton<IRealtimeDataRepository, ServiceBusRealtimeDataRepository>();
                 container.Collection.Register<IGrpcApi>(Assembly.GetExecutingAssembly());
                 container.Collection.Register<IStartupTask>(Assembly.GetExecutingAssembly());
                 container.RegisterInstance<Flags>(flags.Value);

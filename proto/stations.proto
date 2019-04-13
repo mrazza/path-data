@@ -25,7 +25,7 @@ service Stations {
     }
 
     // Gets the posted train schedule for a station.
-    rpc GetTrainSchedule(GetTrainScheduleRequest) returns (GetTrainScheduleResponse) {
+    rpc GetStationSchedule(GetStationScheduleRequest) returns (GetStationScheduleResponse) {
         option (google.api.http) = {
             get: "/v1/stations/{station}/schedule"
         };
@@ -66,8 +66,8 @@ message GetStationRequest {
     Station station = 1;
 }
 
-// The request message for the get train schedule RPC.
-message GetTrainScheduleRequest {
+// The request message for the get station schedule RPC.
+message GetStationScheduleRequest {
     // The station for this request.
     Station station = 1;
 
@@ -80,8 +80,8 @@ message GetTrainScheduleRequest {
     string page_token = 3;
 }
 
-// The response message for the get train schedule RPC.
-message GetTrainScheduleResponse {
+// The response message for the get station schedule RPC.
+message GetStationScheduleResponse {
     // The page token used to request the next page. Empty/unspecified if there
     // are no more results.
     string next_page_token = 1;
@@ -96,9 +96,22 @@ message GetUpcomingTrainsRequest {
 // The response message for the get upcoming (realtime) trains RPC.
 message GetUpcomingTrainsResponse {
     // Represents a single upcoming train into the station.
+    // Next ID: 9
     message UpcomingTrain {
-        // The name of the line for the train in question (aka headsign; e.g. Newark).
-        string line_name = 1;
+        // The headsign for the train in question (e.g. Newark).
+        string line_name = 1 [ deprecated = true ];
+
+        // The headsign for the train in question (e.g. Newark).
+        string headsign = 6;
+
+        // The route this train is on.
+        Route route = 7;
+
+        // The display name for the route and direction.
+        string route_display_name = 8;
+
+        // The direction of the train along the route.
+        Direction direction = 9;
     
         // The collection of colors (in HTML HEX format) that represent the train line.
         // Usually only a single color applies (orange for JSQ/33rd) but sometimes more

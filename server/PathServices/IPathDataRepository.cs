@@ -7,14 +7,14 @@ namespace PathApi.Server.PathServices
     using PathApi.V1;
 
     /// <summary>
-    /// A self-updating repository that provides access to the latest version of the PATH SQLite database.
+    /// A self-updating repository that provides access to the latest version of the static PATH data.
     /// </summary>
-    internal interface IPathSqlDbRepository
+    internal interface IPathDataRepository
     {
         /// <summary>
-        /// An event that is triggered when the PATH SQLite database is downloaded or updated.
+        /// An event that is triggered when the PATH data snapshot is downloaded or updated.
         /// </summary>
-        event EventHandler<EventArgs> OnDatabaseUpdate;
+        event EventHandler<EventArgs> OnDataUpdate;
 
         /// <summary>
         /// Gets the encrypted service bus key from the PATH database.
@@ -27,5 +27,11 @@ namespace PathApi.Server.PathServices
         /// </summary>
         /// <returns>A task returning the station information for the specified station.</returns>
         Task<List<Stop>> GetStops(Station station);
+
+        /// <summary>
+        /// Gets a route from the specified headsign name and color pair.
+        /// </summary>
+        /// <returns>A task returning the route for the specified train.</returns>
+        Task<RouteLine> GetRouteFromTrainHeadsign(string headsignName, string headsignColor);
     }
 }

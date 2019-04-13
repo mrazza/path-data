@@ -1,4 +1,4 @@
-namespace PathApi.Server.GrpcApi
+namespace PathApi.Server.GrpcApi.V1
 {
     using Google.Protobuf.WellKnownTypes;
     using Google.Type;
@@ -19,19 +19,20 @@ namespace PathApi.Server.GrpcApi
     {
         private const int DEFUALT_PAGE_SIZE = 250;
         private readonly Flags flags;
-        private readonly RealtimeDataRepository realtimeDataRepository;
-        private readonly IPathSqlDbRepository sqlDbRepository;
+        private readonly IRealtimeDataRepository realtimeDataRepository;
+        private readonly IPathDataRepository pathDataRepository;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="StationsApi"/>.
         /// </summary>
         /// <param name="flags">Flags instance containing the app configuration.</param>
         /// <param name="realtimeDataRepository">The repository to use when looking up realtime data.</param>
-        public StationsApi(Flags flags, RealtimeDataRepository realtimeDataRepository, IPathSqlDbRepository sqlDbRepository)
+        /// <param name="pathDataRepository">The repository to use when looking up static path data.</param>
+        public StationsApi(Flags flags, IRealtimeDataRepository realtimeDataRepository, IPathDataRepository pathDataRepository)
         {
             this.flags = flags;
             this.realtimeDataRepository = realtimeDataRepository;
-            this.sqlDbRepository = sqlDbRepository;
+            this.pathDataRepository = pathDataRepository;
         }
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace PathApi.Server.GrpcApi
         /// <summary>
         /// Handles the GetUpcomingTrains request.
         /// </summary>
-        public override Task<GetUpcomingTrainsResponse> GetUpcomingTrains(GetUpcomingTrainsRequest request, ServerCallContext context)
+        public override async Task<GetUpcomingTrainsResponse> GetUpcomingTrains(GetUpcomingTrainsRequest request, ServerCallContext context)
         {
             if (request.Station == Station.Unspecified)
             {
@@ -54,11 +55,11 @@ namespace PathApi.Server.GrpcApi
             }
 
             var response = new GetUpcomingTrainsResponse();
-            foreach (var entry in this.realtimeDataRepository.GetRealtimeData(request.Station).Select(data => this.ToUpcomingTrain(data)))
+            foreach (var entry in (await this.realtimeDataRepository.GetRealtimeData(request.Station)).Select(data => this.ToUpcomingTrain(data)))
             {
                 response.UpcomingTrains.Add(entry);
             }
-            return Task.FromResult(response);
+            return response;
         }
 
         /// <summary>
@@ -73,7 +74,7 @@ namespace PathApi.Server.GrpcApi
             List<StationData> stations = new List<StationData>();
             foreach (var station in (System.Enum.GetValues(typeof(Station)) as Station[]).Where((station) => station != Station.Unspecified))
             {
-                var stops = await this.sqlDbRepository.GetStops(station);
+                var stops = await this.pathDataRepository.GetStops(station);
                 stations.Add(this.ToStation(station, stops));
             }
             response.Stations.Add(stations.Skip(offset).Take(pageSize));
@@ -94,7 +95,7 @@ namespace PathApi.Server.GrpcApi
                 throw new RpcException(new Status(StatusCode.NotFound, "Invalid station supplied."));
             }
 
-            var stops = await this.sqlDbRepository.GetStops(request.Station);
+            var stops = await this.pathDataRepository.GetStops(request.Station);
             return this.ToStation(request.Station, stops);
         }
 
@@ -154,10 +155,14 @@ namespace PathApi.Server.GrpcApi
 
             var upcomingTrain = new GetUpcomingTrainsResponse.Types.UpcomingTrain()
             {
-                LineName = realtimeData.HeadSign,
+                LineName = realtimeData.Headsign,
+                Headsign = realtimeData.Headsign,
                 ProjectedArrival = this.ToTimestamp(realtimeData.ExpectedArrival),
                 LastUpdated = this.ToTimestamp(realtimeData.LastUpdated),
-                Status = status
+                Status = status,
+                Route = realtimeData.Route.Route,
+                RouteDisplayName = realtimeData.Route.DisplayName,
+                Direction = RouteMappings.RouteDirectionToDirection[realtimeData.Route.Direction]
             };
             upcomingTrain.LineColors.Add(realtimeData.LineColors);
             return upcomingTrain;
