@@ -177,3 +177,7 @@ HTTP: `https://path.api.razza.dev/v1/stations/<station_name>/realtime`
 You can query the API via your web browser by navigating to a valid endpoint. For example the [9th street station realtime data](https://path.api.razza.dev/v1/stations/ninth_street/realtime).
 
 A simple web app using the realtime arrival data can be found [here](https://jsfiddle.net/qkp7g8ze/embedded/result/).
+
+# Versioning
+
+New fields and features will continue to be added to `v1` of the API. No fields will be removed and no breaking changes will be made to `v1`. Any breaking changes will result in a version number increment and the previous API version will run along side the new version for at least 30 days. There are a number of external consumers of this API.
