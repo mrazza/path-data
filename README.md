@@ -4,6 +4,10 @@ This repository contains the contract and server-side implementation of an API t
 
 This software is not endorsed nor supported by the Port Authority of New York and New Jersey.
 
+# Using This Software
+
+Prefer to use the publically exposed API (below) rather than running this software yourself. Due to Azure Service Bus subscriber limits, running this application without a static subscriber ID or with many subscriber IDs could consume the available topic subscriber quota. For this reason, running this software independently is not recommended. See [this article](https://medium.com/@mrazza/programmatic-path-real-time-arrival-data-5d0884ae1ad6#ab14) for more information.
+
 # Public APIs
 
 The APIs provided by this service can be found at:
@@ -117,40 +121,52 @@ HTTP: `https://path.api.razza.dev/v1/stations/<station_name>/realtime`
 {
   "upcomingTrains": [
     {
-      "lineName": "World Trade Center",
       "lineColors": [
-        "#D93A30"
+        "#65C100"
       ],
-      "projectedArrival": "2019-04-11T03:21:29Z",
-      "lastUpdated": "2019-04-11T03:08:04Z",
-      "status": "ON_TIME"
+      "projectedArrival": "2019-04-13T01:56:00Z",
+      "lastUpdated": "2019-04-13T01:52:05Z",
+      "status": "ON_TIME",
+      "headsign": "Hoboken",
+      "route": "HOB_WTC",
+      "routeDisplayName": "World Trade Center - Hoboken",
+      "direction": "TO_NJ"
     },
     {
-      "lineName": "World Trade Center",
       "lineColors": [
-        "#D93A30"
+        "#65C100"
       ],
-      "projectedArrival": "2019-04-11T03:56:29Z",
-      "lastUpdated": "2019-04-11T03:08:04Z",
-      "status": "ON_TIME"
+      "projectedArrival": "2019-04-13T02:11:00Z",
+      "lastUpdated": "2019-04-13T01:52:05Z",
+      "status": "ON_TIME",
+      "headsign": "Hoboken",
+      "route": "HOB_WTC",
+      "routeDisplayName": "World Trade Center - Hoboken",
+      "direction": "TO_NJ"
     },
     {
-      "lineName": "Newark",
       "lineColors": [
         "#D93A30"
       ],
-      "projectedArrival": "2019-04-11T03:19:46Z",
-      "lastUpdated": "2019-04-11T03:08:04Z",
-      "status": "ON_TIME"
+      "projectedArrival": "2019-04-13T02:01:00Z",
+      "lastUpdated": "2019-04-13T01:52:05Z",
+      "status": "ON_TIME",
+      "headsign": "Newark",
+      "route": "NWK_WTC",
+      "routeDisplayName": "World Trade Center - Newark",
+      "direction": "TO_NJ"
     },
     {
-      "lineName": "Newark",
       "lineColors": [
         "#D93A30"
       ],
-      "projectedArrival": "2019-04-11T03:38:30Z",
-      "lastUpdated": "2019-04-11T03:08:04Z",
-      "status": "ON_TIME"
+      "projectedArrival": "2019-04-13T02:16:00Z",
+      "lastUpdated": "2019-04-13T01:52:05Z",
+      "status": "ON_TIME",
+      "headsign": "Newark",
+      "route": "NWK_WTC",
+      "routeDisplayName": "World Trade Center - Newark",
+      "direction": "TO_NJ"
     }
   ]
 }
