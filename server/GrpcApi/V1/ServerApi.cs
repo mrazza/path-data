@@ -1,4 +1,4 @@
-namespace PathApi.Server.GrpcApi
+namespace PathApi.Server.GrpcApi.V1
 {
     using Google.Protobuf.WellKnownTypes;
     using Grpc.Core;

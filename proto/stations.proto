@@ -25,7 +25,7 @@ service Stations {
     }
 
     // Gets the posted train schedule for a station.
-    rpc GetTrainSchedule(GetTrainScheduleRequest) returns (GetTrainScheduleResponse) {
+    rpc GetStationSchedule(GetStationScheduleRequest) returns (GetStationScheduleResponse) {
         option (google.api.http) = {
             get: "/v1/stations/{station}/schedule"
         };
@@ -66,8 +66,8 @@ message GetStationRequest {
     Station station = 1;
 }
 
-// The request message for the get train schedule RPC.
-message GetTrainScheduleRequest {
+// The request message for the get station schedule RPC.
+message GetStationScheduleRequest {
     // The station for this request.
     Station station = 1;
 
@@ -80,8 +80,8 @@ message GetTrainScheduleRequest {
     string page_token = 3;
 }
 
-// The response message for the get train schedule RPC.
-message GetTrainScheduleResponse {
+// The response message for the get station schedule RPC.
+message GetStationScheduleResponse {
     // The page token used to request the next page. Empty/unspecified if there
     // are no more results.
     string next_page_token = 1;

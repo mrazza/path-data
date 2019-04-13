@@ -218,7 +218,7 @@ namespace PathApi.Server.PathServices
                     }
                 }
             }
-            this.sqliteConnection = new SQLiteConnection($"Data Source={this.GetSqliteFilename(this.latestChecksum)};", true);
+            this.sqliteConnection = new SQLiteConnection($"Data Source={this.GetSqliteFilename(this.latestChecksum)};Read Only=True", true);
             this.sqliteConnection.Open();
             this.AssertConnected();
             Log.Logger.Here().Information($"Database downloaded, connection established to {this.sqliteConnection.DataSource}.");
