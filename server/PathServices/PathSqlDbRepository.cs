@@ -8,6 +8,7 @@ namespace PathApi.Server.PathServices
     using System.Collections.Generic;
     using System.Data;
     using System.Data.SQLite;
+    using System.Globalization;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
@@ -26,6 +27,7 @@ namespace PathApi.Server.PathServices
         private Timer updateTimer;
         private AsyncReaderWriterLock readerWriterLock;
         private readonly TimeSpan refreshTimeSpan;
+        private readonly Dictionary<string, string> specialHeadsignMappings;
 
         /// <summary>
         /// An event that is triggered when the PATH SQLite database is downloaded or updated.
@@ -45,6 +47,17 @@ namespace PathApi.Server.PathServices
             this.sqliteConnection = null;
             this.readerWriterLock = new AsyncReaderWriterLock();
             this.refreshTimeSpan = new TimeSpan(0, 0, this.flags.SqlUpdateCheckFrequencySecs);
+            this.specialHeadsignMappings = new Dictionary<string, string>();
+
+            foreach (var mapping in flags.SpecialHeadsignMappings)
+            {
+                string[] parts = mapping.Split('=');
+                if (parts.Length != 2)
+                {
+                    throw new ArgumentException("Malformed special headsign mapping.");
+                }
+                this.specialHeadsignMappings.Add(parts[0], parts[1]);
+            }
         }
 
         /// <summary>
@@ -75,7 +88,7 @@ namespace PathApi.Server.PathServices
                 this.AssertConnected();
                 SQLiteCommand command = this.sqliteConnection.CreateCommand();
                 command.CommandText = "SELECT configuration_value FROM tblConfigurationData WHERE configuration_key = @key;";
-                command.Parameters.Add(new SQLiteParameter("@key", this.flags.ServiceBusConfigurationKeyName));
+                command.Parameters.AddWithValue("@key", this.flags.ServiceBusConfigurationKeyName);
                 return (string)await command.ExecuteScalarAsync();
             }
         }
@@ -96,7 +109,7 @@ namespace PathApi.Server.PathServices
                 this.AssertConnected();
                 SQLiteCommand command = this.sqliteConnection.CreateCommand();
                 command.CommandText = "SELECT stop_id, stop_name, stop_lat, stop_lon, location_type, parent_station, stop_timezone FROM tblStops WHERE stop_id = @stop_id OR parent_station = @stop_id;";
-                command.Parameters.Add(new SQLiteParameter("@stop_id", StationMappings.StationToDatabaseId[station]));
+                command.Parameters.AddWithValue("@stop_id", StationMappings.StationToDatabaseId[station]);
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     List<Stop> stops = new List<Stop>();
@@ -122,27 +135,44 @@ namespace PathApi.Server.PathServices
         /// Gets a route from the specified headsign name and color pair.
         /// </summary>
         /// <returns>A task returning the route for the specified train.</returns>
-        public async Task<RouteLine> GetRouteFromTrainHeadsign(string headsignName, string headsignColor)
+        public async Task<RouteLine> GetRouteFromTrainHeadsign(string headsignName, IEnumerable<string> headsignColors)
         {
             if (string.IsNullOrWhiteSpace(headsignName))
             {
                 throw new ArgumentException("Headsign must be specified.", nameof(headsignName));
             }
-            else if (string.IsNullOrWhiteSpace(headsignColor))
+            else if (headsignColors == null || headsignColors.Count() <= 0)
             {
-                throw new ArgumentException("Headsign color must be specified.", nameof(headsignColor));
+                throw new ArgumentException("At least one headsign color must be specified.", nameof(headsignColors));
             }
 
             // Input colors are likely to be prefixed with a #. They are not in the SQL database.
-            headsignColor = headsignColor.Trim('#');
+            headsignColors = headsignColors.Select((color) => color.Trim('#'));
+            headsignName = this.NormalizeHeadsign(headsignName);
 
             using (await this.readerWriterLock.ReaderLockAsync())
             {
                 this.AssertConnected();
                 SQLiteCommand command = this.sqliteConnection.CreateCommand();
-                command.CommandText = "SELECT route_id, route_long_name, route_display_name, trip_headsign, route_color, direction_id FROM Schedule WHERE trip_headsign = @headsign COLLATE NOCASE AND route_color = @color COLLATE NOCASE LIMIT 1;";
-                command.Parameters.Add(new SQLiteParameter("@headsign", headsignName));
-                command.Parameters.Add(new SQLiteParameter("@color", headsignColor));
+                int colorIndex = 0;
+                string colorSql = "";
+                foreach (var color in headsignColors)
+                {
+                    if (colorSql != string.Empty)
+                    {
+                        colorSql += ", ";
+                    }
+
+                    colorSql += $"@color{colorIndex}";
+                    command.Parameters.AddWithValue($"@color{colorIndex}", color.ToLowerInvariant());
+                    colorIndex++;
+                }
+                command.CommandText =
+                    "SELECT route_id, route_long_name, route_display_name, trip_headsign, route_color, direction_id " +
+                    "FROM Schedule " +
+                    $"WHERE LOWER(trip_headsign) = @headsign AND LOWER(route_color) IN ({colorSql}) " +
+                    "LIMIT 1;";
+                command.Parameters.AddWithValue("@headsign", headsignName.ToLowerInvariant());
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     if (await reader.ReadAsync())
@@ -160,10 +190,20 @@ namespace PathApi.Server.PathServices
                     }
                     else
                     {
-                        throw new KeyNotFoundException($"Could not find route with headsign={headsignName} and color={headsignColor}.");
+                        throw new KeyNotFoundException($"Could not find route with headsign={headsignName} and color={string.Join(',', headsignColors)}.");
                     }
                 }
             }
+        }
+
+        private string NormalizeHeadsign(string headsign)
+        {
+            if (headsign.Contains("via", StringComparison.InvariantCultureIgnoreCase))
+            {
+                headsign = headsign.Replace("Street", "", true, CultureInfo.InvariantCulture).Replace("  ", " ");
+            }
+            headsign = this.specialHeadsignMappings.GetValueOrDefault(headsign, headsign);
+            return headsign;
         }
 
         private async void UpdateEvent(object ignored)

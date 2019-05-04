@@ -120,7 +120,7 @@ namespace PathApi.Server.PathServices
                     RouteLine route = null;
                     try
                     {
-                        route = await this.pathDataRepository.GetRouteFromTrainHeadsign(realtimeData.Headsign, realtimeData.LineColors.First());
+                        route = await this.pathDataRepository.GetRouteFromTrainHeadsign(realtimeData.Headsign, realtimeData.LineColors);
                     }
                     catch (Exception ex)
                     {

@@ -159,11 +159,14 @@ namespace PathApi.Server.GrpcApi.V1
                 Headsign = realtimeData.Headsign,
                 ProjectedArrival = this.ToTimestamp(realtimeData.ExpectedArrival),
                 LastUpdated = this.ToTimestamp(realtimeData.LastUpdated),
-                Status = status,
-                Route = realtimeData.Route.Route,
-                RouteDisplayName = realtimeData.Route.DisplayName,
-                Direction = RouteMappings.RouteDirectionToDirection[realtimeData.Route.Direction]
+                Status = status
             };
+            if (realtimeData.Route != null)
+            {
+                upcomingTrain.Route = realtimeData.Route.Route;
+                upcomingTrain.RouteDisplayName = realtimeData.Route.DisplayName;
+                upcomingTrain.Direction = RouteMappings.RouteDirectionToDirection[realtimeData.Route.Direction];
+            }
             upcomingTrain.LineColors.Add(realtimeData.LineColors);
             return upcomingTrain;
         }

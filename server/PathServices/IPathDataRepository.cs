@@ -32,6 +32,6 @@ namespace PathApi.Server.PathServices
         /// Gets a route from the specified headsign name and color pair.
         /// </summary>
         /// <returns>A task returning the route for the specified train.</returns>
-        Task<RouteLine> GetRouteFromTrainHeadsign(string headsignName, string headsignColor);
+        Task<RouteLine> GetRouteFromTrainHeadsign(string headsignName, IEnumerable<string> headsignColors);
     }
 }
