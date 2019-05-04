@@ -36,7 +36,7 @@ namespace PathApi.Server.GrpcApi.V1
         }
 
         /// <summary>
-        /// Binds the Server service to this implementation.
+        /// Binds the Stations service to this implementation.
         /// </summary>
         /// <returns>The <see cref="ServerServiceDefinition"/> for this service that can be registered with a server.</returns>
         public ServerServiceDefinition BindService()

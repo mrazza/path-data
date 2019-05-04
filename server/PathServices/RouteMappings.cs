@@ -16,7 +16,7 @@ namespace PathApi.Server.PathServices
         public static readonly ReadOnlyDictionary<string, Route> DatabaseIdToRoute =
             new ReadOnlyDictionary<string, Route>(new Dictionary<string, Route>()
             {
-                { "1024", Route.Jsq33 },
+                { "1024", Route.Jsq33Hob },
                 { "859", Route.Hob33 },
                 { "860", Route.HobWtc },
                 { "861", Route.Jsq33 },

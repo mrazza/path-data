@@ -6,18 +6,21 @@ import "common.proto";
 package path_api.v1;
 
 service Routes {
+    // Lists all routes within the PATH system.
     rpc ListRoutes(ListRoutesRequest) returns (ListRoutesResponse) {
         option (google.api.http) = {
             get: "/v1/routes"
         };
     }
 
+    // Gets information about a single route.
     rpc GetRoute(GetRouteRequest) returns (RouteData) {
         option (google.api.http) = {
             get: "/v1/routes/{route}"
         };
     }
 
+    // Gets the posted train schedule for a route.
     rpc GetRouteSchedule(GetRouteScheduleRequest) returns (GetRouteScheduleResponse) {
         option (google.api.http) = {
             get: "/v1/routes/{route}/schedule"
@@ -36,12 +39,16 @@ message ListRoutesRequest {
 }
 
 message ListRoutesResponse {
+    // The page of routes.
     repeated RouteData routes = 1;
 
+    // The page token used to request the next page. Empty/unspecified if there
+    // are no more results.
     string next_page_token = 2;
 }
 
 message GetRouteRequest {
+    // The route to get information about.
     Route route = 1;
 }
 
@@ -61,23 +68,33 @@ message GetRouteScheduleResponse {
     string next_page_token = 1;
 }
 
+// Data representing a single route in the PATH system.
 message RouteData {
-
+    // The route this entry represents.
     Route route = 1;
 
-    string name = 2;
+    // The ID in the GTFS database of this route.
+    string id = 2;
 
+    // The name (long name) of the route.
+    string name = 3;
+
+    // The color (headsign color) of this route.
+    string color = 4;
+
+    // Represents a single line within this route (think direction of travel).
     message RouteLine {
-
+        // The friendly name of this route line.
         string display_name = 1;
 
+        // The headsign displayed when a train is traveling along this line.
         string headsign = 2;
 
-        string color = 3;
-
-        Direction direction = 4;
+        // The direction of travel.
+        Direction direction = 3;
     }
 
-    repeated RouteLine lines = 3;
+    // The collection of lines along this route.
+    repeated RouteLine lines = 5;
 }
 

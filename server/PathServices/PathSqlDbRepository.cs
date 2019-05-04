@@ -132,6 +132,46 @@ namespace PathApi.Server.PathServices
         }
 
         /// <summary>
+        /// Gets all the routes (specifically RouteLines).
+        /// </summary>
+        /// <returns>A task returning a collection of RouteLines.</returns>
+        public async Task<List<RouteLine>> GetRoutes()
+        {
+            using (await this.readerWriterLock.ReaderLockAsync())
+            {
+                this.AssertConnected();
+                SQLiteCommand command = this.sqliteConnection.CreateCommand();
+                command.CommandText =
+                    "SELECT r.route_id, r.route_long_name, rl.route_display_name,  t.trip_headsign, r.route_color, rl.direction " +
+                    "FROM tblRoutes r " +
+                    "JOIN tblRouteLine rl ON r.route_id = rl.route_id " +
+                    "INNER JOIN tblTrips t ON t.route_id = r.route_id AND t.direction_id = rl.direction " +
+                    "WHERE r.agency_id = 151 " +
+                    "GROUP BY 1, 2, 3, 4, 5, 6 " +
+                    "ORDER BY r.route_id, rl.direction;";
+
+                List<RouteLine> routes = new List<RouteLine>();
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        routes.Add(new RouteLine()
+                        {
+                            Route = RouteMappings.DatabaseIdToRoute[reader.GetString(0)],
+                            Id = reader.GetString(0),
+                            LongName = reader.GetString(1),
+                            DisplayName = reader.GetString(2),
+                            Headsign = reader.GetString(3),
+                            Color = reader.GetString(4),
+                            Direction = (RouteDirection)int.Parse(reader.GetString(5))
+                        });
+                    }
+                    return routes;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets a route from the specified headsign name and color pair.
         /// </summary>
         /// <returns>A task returning the route for the specified train.</returns>

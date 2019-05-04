@@ -29,6 +29,12 @@ namespace PathApi.Server.PathServices
         Task<List<Stop>> GetStops(Station station);
 
         /// <summary>
+        /// Gets all the routes (specifically RouteLines).
+        /// </summary>
+        /// <returns>A task returning a collection of RouteLines.</returns>
+        Task<List<RouteLine>> GetRoutes();
+
+        /// <summary>
         /// Gets a route from the specified headsign name and color pair.
         /// </summary>
         /// <returns>A task returning the route for the specified train.</returns>
