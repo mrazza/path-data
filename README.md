@@ -172,6 +172,61 @@ HTTP: `https://path.api.razza.dev/v1/stations/<station_name>/realtime`
 }
 ```
 
+## List Routes
+
+HTTP: `https://path.api.razza.dev/v1/routes/`
+
+```
+{
+  "routes": [
+    {
+      "route": "JSQ_33_HOB",
+      "id": "1024",
+      "name": "Journal Square - 33rd Street (via Hoboken)",
+      "color": "ff9900",
+      "lines": [
+        {
+          "displayName": "33rd Street (via Hoboken) - Journal Square",
+          "headsign": "Journal Square via Hoboken",
+          "direction": "TO_NJ"
+        },
+        {
+          "displayName": "Journal Square - 33rd Street (via Hoboken)",
+          "headsign": "33rd via Hoboken",
+          "direction": "TO_NY"
+        }
+      ]
+    },
+    // ...
+  ]
+}
+```
+
+## Get Route
+
+HTTP: `https://path.api.razza.dev/v1/routes/NWK_WTC`
+
+```
+{
+  "route": "NWK_WTC",
+  "id": "862",
+  "name": "Newark - World Trade Center",
+  "color": "d93a30",
+  "lines": [
+    {
+      "displayName": "World Trade Center - Newark",
+      "headsign": "Newark",
+      "direction": "TO_NJ"
+    },
+    {
+      "displayName": "Newark - World Trade Center",
+      "headsign": "World Trade Center",
+      "direction": "TO_NY"
+    }
+  ]
+}
+```
+
 # Demo
 
 You can query the API via your web browser by navigating to a valid endpoint. For example the [9th street station realtime data](https://path.api.razza.dev/v1/stations/ninth_street/realtime).
