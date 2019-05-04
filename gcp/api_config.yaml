@@ -17,6 +17,7 @@ title: PATH Data API
 apis:
 - name: path_api.v1.Stations
 - name: path_api.v1.Server
+- name: path_api.v1.Routes
 
 endpoints:
 - name: path-data.endpoints.path-data.cloud.goog
