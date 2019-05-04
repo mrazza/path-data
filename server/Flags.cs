@@ -36,14 +36,14 @@ namespace PathApi.Server
 
         [Option("sql_update_check_frequency_secs", Default = 3600, HelpText = "The delay, in seconds, between checks for a new SQL database.")]
         public int SqlUpdateCheckFrequencySecs { get; set; }
-
-        [Option("special_headsign_mapping", HelpText = "Optional mappings from one headsign to another (of format 'Exchange Place=World Trade Center').")]
-        public IEnumerable<string> SpecialHeadsignMappings { get; set; }
         #endregion
 
         #region PATH Service Bus Flags
         [Option("service_bus_subscription_id", HelpText = "Optional service bus subscription ID, if left unspecified one is generated automatically.")]
         public string ServiceBusSubscriptionId { get; set; }
+
+        [Option("special_headsign_mapping", HelpText = "Optional mappings from one headsign to another (of format 'Exchange Place=World Trade Center').")]
+        public IEnumerable<string> SpecialHeadsignMappings { get; set; }
         #endregion
     }
 }
