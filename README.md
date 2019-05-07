@@ -1,4 +1,4 @@
-# PATH Data API
+# PATH Data API [![Build Status](https://travis-ci.org/mrazza/path-data.svg?branch=master)](https://travis-ci.org/mrazza/path-data) [![Code Coverage](https://img.shields.io/codecov/c/github/mrazza/path-data.svg)](https://codecov.io/gh/mrazza/path-data/)
 
 This repository contains the contract and server-side implementation of an API that exposes data about the Port Authority Trans-Hudson Rapid Transit System.
 
