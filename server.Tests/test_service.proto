@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package path_api.test;
+
+service TestService {
+    rpc EmptyTest(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    }
+}

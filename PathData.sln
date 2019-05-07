@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PathApi.Proto", "proto\Path
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PathApi.Server", "server\PathApi.Server.csproj", "{AF13791C-0202-4803-8EF1-CC59FC7E8C99}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PathApi.Server.Tests", "server.Tests\PathApi.Server.Tests.csproj", "{D2CA82A5-AB13-4F95-9DC5-B22C89C4A304}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{AF13791C-0202-4803-8EF1-CC59FC7E8C99}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF13791C-0202-4803-8EF1-CC59FC7E8C99}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF13791C-0202-4803-8EF1-CC59FC7E8C99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2CA82A5-AB13-4F95-9DC5-B22C89C4A304}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2CA82A5-AB13-4F95-9DC5-B22C89C4A304}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2CA82A5-AB13-4F95-9DC5-B22C89C4A304}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2CA82A5-AB13-4F95-9DC5-B22C89C4A304}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
