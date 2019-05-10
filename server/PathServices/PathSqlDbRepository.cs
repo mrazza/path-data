@@ -249,28 +249,40 @@ namespace PathApi.Server.PathServices
         private async void UpdateEvent(object ignored)
         {
             Log.Logger.Here().Information("Checking for a PATH SQLite DB update...");
-            var newChecksum = await this.pathApiClient.GetLatestChecksum(this.latestChecksum);
+            var previousChecksum = this.latestChecksum;
+            bool updateNeeded = false;
 
-            if (this.latestChecksum != newChecksum)
+            try
             {
-                bool updateNeeded = false;
-                using (await this.readerWriterLock.WriterLockAsync())
+                var newChecksum = await this.pathApiClient.GetLatestChecksum(this.latestChecksum);
+
+                if (this.latestChecksum != newChecksum)
                 {
-                    if (this.latestChecksum != newChecksum)
+                    using (await this.readerWriterLock.WriterLockAsync())
                     {
-                        Log.Logger.Here().Information("PATH SQLite DB update needed.");
-                        updateNeeded = true;
-                        this.latestChecksum = newChecksum;
-                        this.sqliteConnection.Close();
-                        this.sqliteConnection.Dispose();
-                        await this.DownloadDatabase();
+                        if (this.latestChecksum != newChecksum)
+                        {
+                            Log.Logger.Here().Information("PATH SQLite DB update needed.");
+                            updateNeeded = true;
+                            this.latestChecksum = newChecksum;
+                            this.sqliteConnection.Close();
+                            this.sqliteConnection.Dispose();
+                            await this.DownloadDatabase();
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                // Restore the checksum due to an error.
+                this.latestChecksum = previousChecksum;
+                updateNeeded = false;
+                Log.Logger.Here().Error(ex, "Exception when checking for a PATH SQLite DB update.");
+            }
 
-                if (updateNeeded)
-                {
-                    this.InvokeUpdateEvent();
-                }
+            if (updateNeeded)
+            {
+                this.InvokeUpdateEvent();
             }
         }
 
