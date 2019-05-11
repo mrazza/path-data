@@ -1,4 +1,4 @@
-namespace PathApi.Server.Tests
+namespace PathApi.Server.Tests.PathServices
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using PathApi.Server.PathServices;
@@ -21,17 +21,13 @@ namespace PathApi.Server.Tests
         private const string DATABASE_URL = "http://127.0.0.1:8080/dbDownload?sum={0}";
         private const string API_KEY = "duhbestapikey";
         private PathApiClient pathApiClient;
-        private HttpListener httpListener;
-        private Dictionary<string, string> httpResponses;
+        private FakePathApi fakePathApi;
 
         [TestInitialize]
         public void Setup()
         {
-            this.httpResponses = new Dictionary<string, string>();
-            this.httpListener = new HttpListener();
-            this.httpListener.Prefixes.Add("http://+:8080/");
-            this.httpListener.Start();
-            this.httpListener.BeginGetContext(new AsyncCallback(this.HandleHttpRequest), null);
+            this.fakePathApi = new FakePathApi(8080, API_KEY);
+            this.fakePathApi.StartListening();
             this.pathApiClient = new PathApiClient(new Flags()
             {
                 PathCheckDbUpdateUrl = UPDATE_URL,
@@ -43,7 +39,7 @@ namespace PathApi.Server.Tests
         [TestCleanup]
         public void Shutdown()
         {
-            this.httpListener.Stop();
+            this.fakePathApi.Dispose();
         }
 
         [TestMethod]
@@ -52,13 +48,13 @@ namespace PathApi.Server.Tests
             var checksum = "12345";
             var newChecksum = "abcde";
             var newestChecksum = "efghj";
-            this.SetExpectedRequest(
+            this.fakePathApi.AddExpectedRequest(
                 string.Format(UPDATE_URL, checksum),
                 "{'data': { 'checksum': '" + newChecksum + "', 'description': 'UPDATED!' }}");
-            this.SetExpectedRequest(
+            this.fakePathApi.AddExpectedRequest(
                 string.Format(UPDATE_URL, checksum),
                 "{'data': { 'checksum': '" + newestChecksum + "', 'description': 'UPDATED!' }}");
-            this.SetExpectedRequest(
+            this.fakePathApi.AddExpectedRequest(
                 string.Format(UPDATE_URL, newestChecksum), null);
 
             var latestChecksum = await this.pathApiClient.GetLatestChecksum(checksum);
@@ -70,61 +66,12 @@ namespace PathApi.Server.Tests
         {
             var checksum = "12345";
             var databaseContent = "SQLITEDATAHERE";
-            this.SetExpectedRequest(
+            this.fakePathApi.AddExpectedRequest(
                 string.Format(DATABASE_URL, checksum),
                 databaseContent);
 
             var databaseStream = await this.pathApiClient.GetDatabaseAsStream(checksum);
             Assert.AreEqual(databaseContent, new StreamReader(databaseStream).ReadToEnd());
-        }
-
-        private void SetExpectedRequest(string url, string response)
-        {
-            this.httpResponses[url] = response;
-        }
-
-        private void HandleHttpRequest(IAsyncResult asyncResult)
-        {
-            try
-            {
-                var context = this.httpListener.EndGetContext(asyncResult);
-                if (context.Request.Headers["APIKey"] != API_KEY)
-                {
-                    throw new InvalidOperationException("Bad API key.");
-                }
-
-                var url = context.Request.Url.ToString();
-
-                if (this.httpResponses.ContainsKey(url))
-                {
-                    if (this.httpResponses[url] == null)
-                    {
-                        context.Response.ContentLength64 = 0;
-                        context.Response.StatusCode = 404;
-                        context.Response.OutputStream.Close();
-                    }
-                    else
-                    {
-                        var response = Encoding.UTF8.GetBytes(this.httpResponses[url]);
-                        context.Response.ContentLength64 = response.Length;
-                        context.Response.SendChunked = false;
-                        context.Response.StatusCode = 200;
-                        context.Response.OutputStream.Write(response);
-                        context.Response.OutputStream.Close();
-                    }
-                }
-                else
-                {
-                    context.Response.StatusCode = 500;
-                    context.Response.ContentLength64 = 0;
-                    context.Response.OutputStream.Close();
-                    throw new InvalidOperationException("Unexpected HTTP request! " + url);
-                }
-            }
-            finally
-            {
-                this.httpListener.BeginGetContext(new AsyncCallback(this.HandleHttpRequest), null);
-            }
         }
     }
 }

@@ -18,14 +18,14 @@ namespace PathApi.Server.PathServices
     /// <summary>
     /// A self-updating repository that provides access to the latest version of the PATH SQLite database.
     /// </summary>
-    internal sealed class PathSqlDbRepository : IPathDataRepository, IStartupTask
+    internal sealed class PathSqlDbRepository : IPathDataRepository, IStartupTask, IDisposable
     {
         private readonly Flags flags;
-        private readonly PathApiClient pathApiClient;
+        private readonly IPathApiClient pathApiClient;
         private string latestChecksum;
         private SQLiteConnection sqliteConnection;
         private Timer updateTimer;
-        private AsyncReaderWriterLock readerWriterLock;
+        private readonly AsyncReaderWriterLock readerWriterLock;
         private readonly TimeSpan refreshTimeSpan;
         private readonly Dictionary<string, string> specialHeadsignMappings;
 
@@ -39,7 +39,7 @@ namespace PathApi.Server.PathServices
         /// </summary>
         /// <param name="flags">The <see cref="Flags"/> instance containing the app configuration.</param>
         /// <param name="pathApiClient">The <see cref="PathApiClient"/> to use when retrieving the latest SQLite database.</param>
-        public PathSqlDbRepository(Flags flags, PathApiClient pathApiClient)
+        public PathSqlDbRepository(Flags flags, IPathApiClient pathApiClient)
         {
             this.flags = flags;
             this.pathApiClient = pathApiClient;
@@ -323,10 +323,16 @@ namespace PathApi.Server.PathServices
 
         private void AssertConnected()
         {
-            if (sqliteConnection == null || sqliteConnection.State != ConnectionState.Open)
+            if (this.sqliteConnection == null || this.sqliteConnection.State != ConnectionState.Open)
             {
                 throw new InvalidOperationException($"PATH SQL Database is not connected ({sqliteConnection?.State}). Are you making queries before startup has completed?");
             }
+        }
+
+        public void Dispose()
+        {
+            this.updateTimer.Dispose();
+            this.sqliteConnection.Dispose();
         }
     }
 }

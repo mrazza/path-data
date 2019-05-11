@@ -11,7 +11,7 @@ namespace PathApi.Server.PathServices
     /// <summary>
     /// An API client that interfaces with the PATH RESTful API.
     /// </summary>
-    internal sealed class PathApiClient
+    internal sealed class PathApiClient : IPathApiClient
     {
         private readonly Flags flags;
 

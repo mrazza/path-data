@@ -34,8 +34,8 @@ namespace PathApi.Server.Tests
             int callCount2 = 0;
             var startupTaskExecutor = new StartupTaskExecutor(new[]
             {
-                new SimpleStartupTask(async () => { callCount1++; }),
-                new SimpleStartupTask(async () => { callCount2++; })
+                new SimpleStartupTask(() => { callCount1++; return Task.CompletedTask; }),
+                new SimpleStartupTask(() => { callCount2++; return Task.CompletedTask; })
             });
 
             await startupTaskExecutor.ExecuteTasks();
@@ -54,9 +54,9 @@ namespace PathApi.Server.Tests
 
             var startupTaskExecutor = new StartupTaskExecutor(new[]
             {
-                new SimpleStartupTask(async () => { callCount1++; checkpointLatch.SetResult(null); }),
+                new SimpleStartupTask(() => { callCount1++; checkpointLatch.SetResult(null); return Task.CompletedTask; }),
                 new SimpleStartupTask(async () => { await blockingLatch.Task; callCount2++; }),
-                new SimpleStartupTask(async () => { callCount3++; })
+                new SimpleStartupTask(() => { callCount3++; return Task.CompletedTask; })
             });
 
             var executionTask = startupTaskExecutor.ExecuteTasks();
