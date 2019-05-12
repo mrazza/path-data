@@ -2,6 +2,7 @@ namespace PathApi.Server.PathServices.Models
 {
     using System;
     using System.Collections.Generic;
+    using Newtonsoft.Json;
     using PathApi.V1;
 
     /// <summary>
@@ -29,5 +30,36 @@ namespace PathApi.Server.PathServices.Models
 
         // The direction of travel along this route.
         public RouteDirection Direction { get; set; }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
+
+        public override bool Equals(object obj)
+        {
+            var route = obj as RouteLine;
+            return route != null &&
+                   this.Route == route.Route &&
+                   this.Id == route.Id &&
+                   this.LongName == route.LongName &&
+                   this.DisplayName == route.DisplayName &&
+                   this.Headsign == route.Headsign &&
+                   this.Color == route.Color &&
+                   this.Direction == route.Direction;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            hash = hash * 23 + this.Route.GetHashCode();
+            hash = hash * 23 + (this.Id ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.LongName ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.DisplayName ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.Headsign ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.Color ?? string.Empty).GetHashCode();
+            hash = hash * 23 + this.Direction.GetHashCode();
+            return hash;
+        }
     }
 }

@@ -6,6 +6,7 @@ namespace PathApi.Server.GrpcApi.V1
     using PathApi.Server.PathServices;
     using PathApi.Server.PathServices.Models;
     using PathApi.V1;
+    using Serilog;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -18,7 +19,6 @@ namespace PathApi.Server.GrpcApi.V1
     internal sealed class StationsApi : Stations.StationsBase, IGrpcApi
     {
         private const int DEFUALT_PAGE_SIZE = 250;
-        private readonly Flags flags;
         private readonly IRealtimeDataRepository realtimeDataRepository;
         private readonly IPathDataRepository pathDataRepository;
 
@@ -28,9 +28,8 @@ namespace PathApi.Server.GrpcApi.V1
         /// <param name="flags">Flags instance containing the app configuration.</param>
         /// <param name="realtimeDataRepository">The repository to use when looking up realtime data.</param>
         /// <param name="pathDataRepository">The repository to use when looking up static path data.</param>
-        public StationsApi(Flags flags, IRealtimeDataRepository realtimeDataRepository, IPathDataRepository pathDataRepository)
+        public StationsApi(IRealtimeDataRepository realtimeDataRepository, IPathDataRepository pathDataRepository)
         {
-            this.flags = flags;
             this.realtimeDataRepository = realtimeDataRepository;
             this.pathDataRepository = pathDataRepository;
         }
@@ -74,8 +73,15 @@ namespace PathApi.Server.GrpcApi.V1
             List<StationData> stations = new List<StationData>();
             foreach (var station in (System.Enum.GetValues(typeof(Station)) as Station[]).Where((station) => station != Station.Unspecified))
             {
-                var stops = await this.pathDataRepository.GetStops(station);
-                stations.Add(this.ToStation(station, stops));
+                try
+                {
+                    var stops = await this.pathDataRepository.GetStops(station);
+                    stations.Add(this.ToStation(station, stops));
+                }
+                catch (Exception ex)
+                {
+                    Log.Logger.Here().Warning(ex, $"Failed to load expected station {station}.");
+                }
             }
             response.Stations.Add(stations.Skip(offset).Take(pageSize));
             if (stations.Count > offset + pageSize)

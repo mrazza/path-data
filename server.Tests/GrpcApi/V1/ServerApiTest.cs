@@ -1,6 +1,8 @@
 namespace PathApi.Server.Tests.GrpcApi
 {
+    using Google.Protobuf.WellKnownTypes;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using PathApi.Server.GrpcApi.V1;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -10,8 +12,10 @@ namespace PathApi.Server.Tests.GrpcApi
     public sealed class ServerApiTest
     {
         [TestMethod]
-        public async Task RunBlocks()
+        public async Task GetHealth()
         {
+            var api = new ServerApi();
+            Assert.IsNotNull(await api.GetHealth(new Empty(), null));
         }
     }
 }

@@ -126,6 +126,12 @@ namespace PathApi.Server.PathServices
                             Timezone = reader.GetString(6)
                         });
                     }
+
+                    if (stops.Count == 0)
+                    {
+                        throw new KeyNotFoundException("Could not find requested station in the PATH data.");
+                    }
+
                     return stops;
                 }
             }

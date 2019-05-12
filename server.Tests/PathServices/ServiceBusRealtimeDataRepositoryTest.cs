@@ -10,7 +10,7 @@ namespace PathApi.Server.Tests.PathServices
     public sealed class ServiceBusRealtimeDataRepositoryTest
     {
         [TestMethod]
-        public async Task RunBlocks()
+        public async Task Test()
         {
         }
     }
