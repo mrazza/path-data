@@ -51,7 +51,7 @@ namespace PathApi.Server.PathServices.Models
             return obj is RealtimeData data &&
                    this.ExpectedArrival == data.ExpectedArrival &&
                    this.ArrivalTimeMessage == data.ArrivalTimeMessage &&
-                   this.LineColors != null ? this.LineColors.Equals(data.LineColors) : this.LineColors == data.LineColors &&
+                   (this.LineColors != null ? this.LineColors.Equals(data.LineColors) : this.LineColors == data.LineColors) &&
                    this.Headsign == data.Headsign &&
                    this.LastUpdated == data.LastUpdated &&
                    this.DataExpiration == data.DataExpiration &&
