@@ -53,11 +53,11 @@ namespace PathApi.Server.PathServices.Models
         {
             int hash = 17;
             hash = hash * 23 + this.Route.GetHashCode();
-            hash = hash * 23 + (this.Id ?? string.Empty).GetHashCode();
-            hash = hash * 23 + (this.LongName ?? string.Empty).GetHashCode();
-            hash = hash * 23 + (this.DisplayName ?? string.Empty).GetHashCode();
-            hash = hash * 23 + (this.Headsign ?? string.Empty).GetHashCode();
-            hash = hash * 23 + (this.Color ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.Id?.GetHashCode() ?? 0);
+            hash = hash * 23 + (this.LongName?.GetHashCode() ?? 0);
+            hash = hash * 23 + (this.DisplayName?.GetHashCode() ?? 0);
+            hash = hash * 23 + (this.Headsign?.GetHashCode() ?? 0);
+            hash = hash * 23 + (this.Color?.GetHashCode() ?? 0);
             hash = hash * 23 + this.Direction.GetHashCode();
             return hash;
         }

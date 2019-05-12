@@ -65,12 +65,12 @@ namespace PathApi.Server.PathServices.Models
         public override int GetHashCode()
         {
             int hash = 17;
-            hash = hash * 23 + (this.Id ?? string.Empty).GetHashCode();
-            hash = hash * 23 + (this.Name ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.Id?.GetHashCode() ?? 0);
+            hash = hash * 23 + (this.Name?.GetHashCode() ?? 0);
             hash = hash * 23 + this.Latitude.GetHashCode();
             hash = hash * 23 + this.Longitude.GetHashCode();
-            hash = hash * 23 + (this.Timezone ?? string.Empty).GetHashCode();
-            hash = hash * 23 + (this.ParentStopId ?? string.Empty).GetHashCode();
+            hash = hash * 23 + (this.Timezone?.GetHashCode() ?? 0);
+            hash = hash * 23 + (this.ParentStopId?.GetHashCode() ?? 0);
             hash = hash * 23 + this.LocationType.GetHashCode();
             return hash;
         }
