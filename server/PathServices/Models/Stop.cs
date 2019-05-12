@@ -44,15 +44,11 @@ namespace PathApi.Server.PathServices.Models
         /// </summary>
         public LocationType LocationType { get; set; }
 
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
+        public override string ToString() => JsonConvert.SerializeObject(this);
 
         public override bool Equals(object obj)
         {
-            var stop = obj as Stop;
-            return stop != null &&
+            return obj is Stop stop &&
                    this.Id == stop.Id &&
                    this.Name == stop.Name &&
                    this.Latitude == stop.Latitude &&
@@ -65,13 +61,13 @@ namespace PathApi.Server.PathServices.Models
         public override int GetHashCode()
         {
             int hash = 17;
-            hash = hash * 23 + (this.Id?.GetHashCode() ?? 0);
-            hash = hash * 23 + (this.Name?.GetHashCode() ?? 0);
-            hash = hash * 23 + this.Latitude.GetHashCode();
-            hash = hash * 23 + this.Longitude.GetHashCode();
-            hash = hash * 23 + (this.Timezone?.GetHashCode() ?? 0);
-            hash = hash * 23 + (this.ParentStopId?.GetHashCode() ?? 0);
-            hash = hash * 23 + this.LocationType.GetHashCode();
+            hash = (hash * 23) + (this.Id?.GetHashCode() ?? 0);
+            hash = (hash * 23) + (this.Name?.GetHashCode() ?? 0);
+            hash = (hash * 23) + this.Latitude.GetHashCode();
+            hash = (hash * 23) + this.Longitude.GetHashCode();
+            hash = (hash * 23) + (this.Timezone?.GetHashCode() ?? 0);
+            hash = (hash * 23) + (this.ParentStopId?.GetHashCode() ?? 0);
+            hash = (hash * 23) + this.LocationType.GetHashCode();
             return hash;
         }
     }
