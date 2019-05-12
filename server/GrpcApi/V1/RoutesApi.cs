@@ -18,17 +18,14 @@ namespace PathApi.Server.GrpcApi.V1
     internal sealed class RoutesApi : Routes.RoutesBase, IGrpcApi
     {
         private const int DEFUALT_PAGE_SIZE = 250;
-        private readonly Flags flags;
         private readonly IPathDataRepository pathDataRepository;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="RoutesApi"/>.
         /// </summary>
-        /// <param name="flags">Flags instance containing the app configuration.</param>
         /// <param name="pathDataRepository">The repository to use when looking up static path data.</param>
-        public RoutesApi(Flags flags, IPathDataRepository pathDataRepository)
+        public RoutesApi(IPathDataRepository pathDataRepository)
         {
-            this.flags = flags;
             this.pathDataRepository = pathDataRepository;
         }
 

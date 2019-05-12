@@ -18,14 +18,14 @@ namespace PathApi.Server.PathServices
     /// <summary>
     /// A self-updating repository that provides access to the latest version of the PATH SQLite database.
     /// </summary>
-    internal sealed class PathSqlDbRepository : IPathDataRepository, IStartupTask
+    internal sealed class PathSqlDbRepository : IPathDataRepository, IStartupTask, IDisposable
     {
         private readonly Flags flags;
-        private readonly PathApiClient pathApiClient;
+        private readonly IPathApiClient pathApiClient;
         private string latestChecksum;
         private SQLiteConnection sqliteConnection;
         private Timer updateTimer;
-        private AsyncReaderWriterLock readerWriterLock;
+        private readonly AsyncReaderWriterLock readerWriterLock;
         private readonly TimeSpan refreshTimeSpan;
         private readonly Dictionary<string, string> specialHeadsignMappings;
 
@@ -39,7 +39,7 @@ namespace PathApi.Server.PathServices
         /// </summary>
         /// <param name="flags">The <see cref="Flags"/> instance containing the app configuration.</param>
         /// <param name="pathApiClient">The <see cref="PathApiClient"/> to use when retrieving the latest SQLite database.</param>
-        public PathSqlDbRepository(Flags flags, PathApiClient pathApiClient)
+        public PathSqlDbRepository(Flags flags, IPathApiClient pathApiClient)
         {
             this.flags = flags;
             this.pathApiClient = pathApiClient;
@@ -126,6 +126,12 @@ namespace PathApi.Server.PathServices
                             Timezone = reader.GetString(6)
                         });
                     }
+
+                    if (stops.Count == 0)
+                    {
+                        throw new KeyNotFoundException("Could not find requested station in the PATH data.");
+                    }
+
                     return stops;
                 }
             }
@@ -249,28 +255,40 @@ namespace PathApi.Server.PathServices
         private async void UpdateEvent(object ignored)
         {
             Log.Logger.Here().Information("Checking for a PATH SQLite DB update...");
-            var newChecksum = await this.pathApiClient.GetLatestChecksum(this.latestChecksum);
+            var previousChecksum = this.latestChecksum;
+            bool updateNeeded = false;
 
-            if (this.latestChecksum != newChecksum)
+            try
             {
-                bool updateNeeded = false;
-                using (await this.readerWriterLock.WriterLockAsync())
+                var newChecksum = await this.pathApiClient.GetLatestChecksum(this.latestChecksum);
+
+                if (this.latestChecksum != newChecksum)
                 {
-                    if (this.latestChecksum != newChecksum)
+                    using (await this.readerWriterLock.WriterLockAsync())
                     {
-                        Log.Logger.Here().Information("PATH SQLite DB update needed.");
-                        updateNeeded = true;
-                        this.latestChecksum = newChecksum;
-                        this.sqliteConnection.Close();
-                        this.sqliteConnection.Dispose();
-                        await this.DownloadDatabase();
+                        if (this.latestChecksum != newChecksum)
+                        {
+                            Log.Logger.Here().Information("PATH SQLite DB update needed.");
+                            updateNeeded = true;
+                            this.latestChecksum = newChecksum;
+                            this.sqliteConnection.Close();
+                            this.sqliteConnection.Dispose();
+                            await this.DownloadDatabase();
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                // Restore the checksum due to an error.
+                this.latestChecksum = previousChecksum;
+                updateNeeded = false;
+                Log.Logger.Here().Error(ex, "Exception when checking for a PATH SQLite DB update.");
+            }
 
-                if (updateNeeded)
-                {
-                    this.InvokeUpdateEvent();
-                }
+            if (updateNeeded)
+            {
+                this.InvokeUpdateEvent();
             }
         }
 
@@ -311,10 +329,16 @@ namespace PathApi.Server.PathServices
 
         private void AssertConnected()
         {
-            if (sqliteConnection == null || sqliteConnection.State != ConnectionState.Open)
+            if (this.sqliteConnection == null || this.sqliteConnection.State != ConnectionState.Open)
             {
                 throw new InvalidOperationException($"PATH SQL Database is not connected ({sqliteConnection?.State}). Are you making queries before startup has completed?");
             }
+        }
+
+        public void Dispose()
+        {
+            this.updateTimer.Dispose();
+            this.sqliteConnection.Dispose();
         }
     }
 }
