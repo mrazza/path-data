@@ -2,6 +2,7 @@ namespace PathApi.Server.PathServices.Models
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -51,7 +52,7 @@ namespace PathApi.Server.PathServices.Models
             return obj is RealtimeData data &&
                    this.ExpectedArrival == data.ExpectedArrival &&
                    this.ArrivalTimeMessage == data.ArrivalTimeMessage &&
-                   (this.LineColors != null ? this.LineColors.Equals(data.LineColors) : this.LineColors == data.LineColors) &&
+                   (this.LineColors != null ? this.LineColors.SequenceEqual(data.LineColors) : this.LineColors == data.LineColors) &&
                    this.Headsign == data.Headsign &&
                    this.LastUpdated == data.LastUpdated &&
                    this.DataExpiration == data.DataExpiration &&
@@ -67,7 +68,7 @@ namespace PathApi.Server.PathServices.Models
             hash = (hash * 23) + (this.Headsign?.GetHashCode() ?? 0);
             hash = (hash * 23) + this.LastUpdated.GetHashCode();
             hash = (hash * 23) + this.DataExpiration.GetHashCode();
-            hash = (hash * 23) + this.Route.GetHashCode();
+            hash = (hash * 23) + (this.Route?.GetHashCode() ?? 0);
             return hash;
         }
     }

@@ -3,6 +3,7 @@ namespace PathApi.Server.PathServices
     using Microsoft.Azure.ServiceBus;
     using Microsoft.Azure.ServiceBus.Management;
     using Newtonsoft.Json;
+    using PathApi.Server.PathServices.Azure;
     using PathApi.Server.PathServices.Models;
     using PathApi.V1;
     using Serilog;
@@ -19,20 +20,21 @@ namespace PathApi.Server.PathServices
     internal sealed class ServiceBusRealtimeDataRepository : IRealtimeDataRepository, IDisposable
     {
         private readonly IPathDataRepository pathDataRepository;
-        private ManagementClient managementClient;
-        private readonly ConcurrentDictionary<Station, SubscriptionClient> subscriptionClients;
+        private readonly IServiceBusFactory managementClientFactory;
+        private readonly ConcurrentDictionary<Station, ISubscriptionClient> subscriptionClients;
         private readonly ConcurrentDictionary<Tuple<Station, RouteDirection>, List<RealtimeData>> realtimeData;
         private readonly string serviceBusSubscriptionId;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="ServiceBusRealtimeDataRepository"/>.
         /// </summary>
-        public ServiceBusRealtimeDataRepository(IPathDataRepository pathDataRepository, Flags flags)
+        public ServiceBusRealtimeDataRepository(IPathDataRepository pathDataRepository, Flags flags, IServiceBusFactory managementClientFactory)
         {
             this.pathDataRepository = pathDataRepository;
+            this.managementClientFactory = managementClientFactory;
             this.serviceBusSubscriptionId = flags.ServiceBusSubscriptionId ?? Guid.NewGuid().ToString();
             this.pathDataRepository.OnDataUpdate += this.PathSqlDbUpdated;
-            this.subscriptionClients = new ConcurrentDictionary<Station, SubscriptionClient>();
+            this.subscriptionClients = new ConcurrentDictionary<Station, ISubscriptionClient>();
             this.realtimeData = new ConcurrentDictionary<Tuple<Station, RouteDirection>, List<RealtimeData>>();
         }
 
@@ -67,13 +69,13 @@ namespace PathApi.Server.PathServices
             await this.CloseExistingSubscriptions();
 
             var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey());
-            this.managementClient = new ManagementClient(connectionString);
+            var managementClient = this.managementClientFactory.CreateManagementClient(connectionString);
             await Task.WhenAll(StationMappings.StationToShortName.Select(station =>
                 Task.Run(async () =>
                 {
                     try
                     {
-                        await this.managementClient.CreateSubscriptionAsync(station.Value, this.serviceBusSubscriptionId, new System.Threading.CancellationToken());
+                        await managementClient.CreateSubscriptionAsync(station.Value, this.serviceBusSubscriptionId, new System.Threading.CancellationToken());
                     }
                     catch (MessagingEntityAlreadyExistsException ex)
                     {
@@ -84,7 +86,7 @@ namespace PathApi.Server.PathServices
                         Log.Logger.Here().Error(ex, $"Attempt to create a new service bus subscription for {station} with ID {this.serviceBusSubscriptionId} unexpectedly failed.");
                     }
 
-                    var client = new SubscriptionClient(connectionString, station.Value, this.serviceBusSubscriptionId);
+                    var client = this.managementClientFactory.CreateSubscriptionClient(connectionString, station.Value, this.serviceBusSubscriptionId);
                     client.RegisterMessageHandler(
                         async (message, token) => await this.ProcessNewMessage(station.Key, message),
                         new MessageHandlerOptions(async (args) => await this.HandleMessageError(station.Key, args))
@@ -94,6 +96,7 @@ namespace PathApi.Server.PathServices
                         });
                     this.subscriptionClients.AddOrUpdate(station.Key, client, (ignored1, ignored2) => client);
                 })));
+            await managementClient.CloseAsync();
         }
 
         private async Task ProcessNewMessage(Station station, Message message)
@@ -101,7 +104,12 @@ namespace PathApi.Server.PathServices
             try
             {
                 RouteDirection direction = Enum.Parse<RouteDirection>(message.Label, true);
-                DateTime expiration = message.ExpiresAtUtc.AddMinutes(2); // Add two minutes as a buffer.
+                DateTime expiration = DateTime.UtcNow.AddMinutes(2);
+                try
+                {
+                    expiration = message.ExpiresAtUtc.AddMinutes(2); // Add two minutes as a buffer.
+                }
+                catch (Exception) { /* Ignore. */ }
                 ServiceBusMessage messageBody = JsonConvert.DeserializeObject<ServiceBusMessage>(Encoding.UTF8.GetString(message.Body));
                 Tuple<Station, RouteDirection> key = this.MakeKey(station, direction);
 
@@ -170,14 +178,25 @@ namespace PathApi.Server.PathServices
         }
         #endregion
 
-
-        private sealed class ServiceBusMessage
+        /// <summary>
+        /// Message received by the Service Bus client (JSON encoded).
+        /// </summary>
+        /// <remarks>
+        /// This is only publicly exposed for testing purposes.
+        /// </remarks>
+        public sealed class ServiceBusMessage
         {
             public string Target { get; set; }
             public List<RealtimeMessage> Messages { get; set; }
         }
 
-        private sealed class RealtimeMessage
+        /// <summary>
+        /// Message received by the Service Bus client (JSON encoded).
+        /// </summary>
+        /// <remarks>
+        /// This is only publicly exposed for testing purposes.
+        /// </remarks>
+        public sealed class RealtimeMessage
         {
             public int SecondsToArrival { get; set; }
             public string ArrivalTimeMessage { get; set; }
