@@ -107,6 +107,7 @@ namespace PathApi.Server.Tests.PathServices
 
             this.fakePathDataRepository.TriggerUpdate();
 
+            Assert.AreNotEqual(0, oldSubs.Count);
             foreach (var sub in oldSubs.Values)
             {
                 Assert.IsTrue(sub.subscription.IsClosed);
@@ -125,6 +126,19 @@ namespace PathApi.Server.Tests.PathServices
             Assert.AreEqual(1, realtimeData.Count());
         }
 
+        [TestMethod]
+        public async Task Disposes()
+        {
+            this.fakePathDataRepository.TriggerUpdate();
+
+            this.realtimeDataRepository.Dispose();
+
+            Assert.AreNotEqual(0, this.createdSubscriptions.Count);
+            foreach (var sub in this.createdSubscriptions.Values)
+            {
+                Assert.IsTrue(sub.subscription.IsClosed);
+            }
+        }
 
         private void SendMessage(Station station, Direction direction, ServiceBusRealtimeDataRepository.RealtimeMessage message)
         {
