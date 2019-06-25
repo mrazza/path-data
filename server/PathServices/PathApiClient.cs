@@ -92,7 +92,7 @@ namespace PathApi.Server.PathServices
                 {
                     var stringResponse = await httpResponse.Content.ReadAsStringAsync();
                     var jsonResponse = JObject.Parse(stringResponse);
-                    return jsonResponse["data"].ToObject<CheckDbUpdateResponse>().Checksum;
+                    return jsonResponse["data"]?.ToObject<CheckDbUpdateResponse>()?.Checksum ?? checksum;
                 }
                 else
                 {
