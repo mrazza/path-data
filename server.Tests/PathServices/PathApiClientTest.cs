@@ -62,6 +62,25 @@ namespace PathApi.Server.Tests.PathServices
         }
 
         [TestMethod]
+        public async Task UpdatesChecksum_NullData()
+        {
+            var checksum = "12345";
+            var newChecksum = "abcde";
+            var newestChecksum = "efghj";
+            this.fakePathApi.AddExpectedRequest(
+                string.Format(UPDATE_URL, checksum),
+                "{'data': { 'checksum': '" + newChecksum + "', 'description': 'UPDATED!' }}");
+            this.fakePathApi.AddExpectedRequest(
+                string.Format(UPDATE_URL, checksum),
+                "{'data': { 'checksum': '" + newestChecksum + "', 'description': 'UPDATED!' }}");
+            this.fakePathApi.AddExpectedRequest(
+                string.Format(UPDATE_URL, newestChecksum), "{'data': null}");
+
+            var latestChecksum = await this.pathApiClient.GetLatestChecksum(checksum);
+            Assert.AreEqual(newestChecksum, latestChecksum);
+        }
+
+        [TestMethod]
         public async Task DownloadsDatabase()
         {
             var checksum = "12345";
