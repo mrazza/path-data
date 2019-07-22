@@ -14,6 +14,8 @@ The APIs provided by this service can be found at:
 - HTTP: https://path.api.razza.dev/...
 - gRPC: path.grpc.razza.dev (running on the default port, 443)
 
+API Status/Uptime: https://www.razza.dev/path-api-status.html 
+
 ## List Stations
 
 HTTP: `https://path.api.razza.dev/v1/stations`
