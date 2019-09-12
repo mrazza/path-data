@@ -23,6 +23,18 @@ namespace PathApi.Server.PathServices
         Task<string> GetServiceBusKey();
 
         /// <summary>
+        /// Gets the encrypted JWT token broker URL from the PATH database.
+        /// </summary>
+        /// <returns>A task returning the encrypted JWT token broker URL.</returns>
+        Task<string> GetTokenBrokerUrl();
+
+        /// <summary>
+        /// Gets the encrypted token value from the PATH database.
+        /// </summary>
+        /// <returns>A task returning the encrypted token value.</returns>
+        Task<string> GetTokenValue();
+
+        /// <summary>
         /// Gets information about the specified station.
         /// </summary>
         /// <returns>A task returning the station information for the specified station.</returns>

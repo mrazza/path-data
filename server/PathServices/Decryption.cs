@@ -10,7 +10,7 @@ namespace PathApi.Server.PathServices
     /// </summary>
     internal static class Decryption
     {
-        private static string ConfigurationDecryptKey = "TLckjEE2f4mdo6d6vqiHhgTfB";
+        private static string ConfigurationDecryptKey = "PVTG16QwdKSbQhjIwSsQdAm0i";
         private static byte[] KeySalt = new byte[13] { 73, 118, 97, 110, 32, 77, 101, 100, 118, 101, 100, 101, 118 };
 
         /// <summary>

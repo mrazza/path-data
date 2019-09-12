@@ -70,7 +70,7 @@ namespace PathApi.Server.PathServices
 
             var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey());
             var managementClient = this.managementClientFactory.CreateManagementClient(connectionString);
-            await Task.WhenAll(StationMappings.StationToShortName.Select(station =>
+            await Task.WhenAll(StationMappings.StationToServiceBusTopic.Select(station =>
                 Task.Run(async () =>
                 {
                     try
