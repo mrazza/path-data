@@ -63,34 +63,49 @@
             var tokenValue = Decryption.Decrypt(await this.pathDataRepository.GetTokenValue());
 
             await Task.WhenAll(StationMappings.StationToSignalRTokenName.SelectMany(station =>
-                RouteDirectionMappings.RouteDirectionToDirectionKey.Select(direction =>
-                    Task.Run(async () =>
+                RouteDirectionMappings.RouteDirectionToDirectionKey.Select(direction => this.CreateHubConnection(tokenBrokerUrl, tokenValue, station.Key, direction.Key))));
+        }
+
+        private async Task CreateHubConnection(string tokenBrokerUrl, string tokenValue, Station station, RouteDirection direction)
+        {
+            SignalRToken token;
+
+            try
+            {
+                token = await this.pathApiClient.GetToken(tokenBrokerUrl, tokenValue, station, direction);
+
+                var connection = new HubConnectionBuilder()
+                    .WithUrl(token.Url, c => c.AccessTokenProvider = () => Task.FromResult(token.AccessToken))
+                    .Build();
+
+                connection.On<string, string>("SendMessage", (_, json) =>
+                    this.ProcessNewMessage(station, direction, json)
+                        .ConfigureAwait(false)
+                        .GetAwaiter()
+                        .GetResult());
+
+                connection.Closed += async (e) =>
+                {
+                    if (e != null)
                     {
-                        SignalRToken token;
+                        Log.Logger.Here().Warning(e, "SignalR connection was closed (unexpectedly?) as a result of an exception; recovering");
+                        await Task.Delay(new Random().Next(0, 50) * 100);
+                        await this.CreateHubConnection(tokenBrokerUrl, tokenValue, station, direction);
+                    }
+                    else
+                    {
+                        Log.Logger.Here().Warning("SignalR connection close event was triggered but the exception is null; expected?");
+                    }
+                };
 
-                        try
-                        {
-                            token = await this.pathApiClient.GetToken(tokenBrokerUrl, tokenValue, station.Key, direction.Key);
+                await connection.StartAsync();
 
-                            var connection = new HubConnectionBuilder()
-                                .WithUrl(token.Url, c => c.AccessTokenProvider = () => Task.FromResult(token.AccessToken))
-                                .Build();
-
-                            connection.On<string, string>("SendMessage", (_, json) =>
-                                this.ProcessNewMessage(station.Key, direction.Key, json)
-                                    .ConfigureAwait(false)
-                                    .GetAwaiter()
-                                    .GetResult());
-
-                            await connection.StartAsync();
-
-                            this.hubConnections.AddOrUpdate((station.Key, direction.Key), connection, (_, __) => connection);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Logger.Here().Error(ex, $"Attempt to create a new SignalR Hub connection for {station.Value}-{direction.Value} unexpectedly failed.");
-                        }
-                    }))));
+                this.hubConnections.AddOrUpdate((station, direction), connection, (_, __) => connection);
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Here().Error(ex, $"Attempt to create a new SignalR Hub connection for {station}-{direction} unexpectedly failed.");
+            }
         }
 
         private async Task ProcessNewMessage(Station station, RouteDirection direction, string jsonBlob)
