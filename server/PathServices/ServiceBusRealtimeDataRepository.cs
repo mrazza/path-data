@@ -68,7 +68,7 @@ namespace PathApi.Server.PathServices
         {
             await this.CloseExistingSubscriptions();
 
-            var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey());
+            var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey(), legacyKey: true);
             var managementClient = this.managementClientFactory.CreateManagementClient(connectionString);
             await Task.WhenAll(StationMappings.StationToServiceBusTopic.Select(station =>
                 Task.Run(async () =>
