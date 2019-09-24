@@ -58,6 +58,7 @@ namespace PathApi.Server.GrpcApi.V1
             {
                 response.UpcomingTrains.Add(entry);
             }
+
             return response;
         }
 
@@ -80,7 +81,7 @@ namespace PathApi.Server.GrpcApi.V1
                 }
                 catch (Exception ex)
                 {
-                    Log.Logger.Here().Warning(ex, $"Failed to load expected station {station}.");
+                    Log.Logger.Here().Warning(ex, "Failed to load expected station {station}.", station);
                 }
             }
             response.Stations.Add(stations.Skip(offset).Take(pageSize));

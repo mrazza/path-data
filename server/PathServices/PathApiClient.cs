@@ -41,7 +41,7 @@ namespace PathApi.Server.PathServices
             string currentChecksum;
             while (lastChecksum != (currentChecksum = await this.CheckForDbUpdate(lastChecksum)))
             {
-                Log.Logger.Here().Information($"PATH DB checksum updated to {currentChecksum}.");
+                Log.Logger.Here().Information("PATH DB checksum updated to {currentChecksum}.", currentChecksum);
                 lastChecksum = currentChecksum;
             }
             return currentChecksum;

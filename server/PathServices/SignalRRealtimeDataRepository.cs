@@ -30,7 +30,7 @@
             this.pathApiClient = pathApiClient;
             this.hubConnections = new ConcurrentDictionary<(Station, RouteDirection), HubConnection>();
             this.realtimeData = new ConcurrentDictionary<(Station, RouteDirection), List<RealtimeData>>();
-
+            
             this.pathDataRepository.OnDataUpdate += this.PathSqlDbUpdated;
         }
 
@@ -42,6 +42,11 @@
         public Task<IEnumerable<RealtimeData>> GetRealtimeData(Station station)
         {
             return Task.FromResult(this.GetRealtimeData(station, RouteDirection.ToNY).Union(this.GetRealtimeData(station, RouteDirection.ToNJ)).Where(data => data.DataExpiration > DateTime.UtcNow));
+        }
+
+        public async Task CloseConnection()
+        {
+            await this.CreateHubConnections();
         }
 
         private IEnumerable<RealtimeData> GetRealtimeData(Station station, RouteDirection direction)
@@ -72,6 +77,7 @@
 
             try
             {
+                Log.Logger.Here().Information("Creating new SignalR hub connection for S:{station} D:{direction}", station, direction);
                 token = await this.pathApiClient.GetToken(tokenBrokerUrl, tokenValue, station, direction);
 
                 var connection = new HubConnectionBuilder()
@@ -86,25 +92,28 @@
 
                 connection.Closed += async (e) =>
                 {
+                    if (!this.hubConnections.ContainsKey((station, direction)))
+                    {
+                        return;
+                    }
+
                     if (e != null)
                     {
-                        Log.Logger.Here().Warning(e, "SignalR connection was closed (unexpectedly?) as a result of an exception; recovering");
-                        await Task.Delay(new Random().Next(0, 50) * 100);
-                        await this.CreateHubConnection(tokenBrokerUrl, tokenValue, station, direction);
+                        Log.Logger.Here().Warning(e, "SignalR connection was closed as a result of an exception");
                     }
-                    else
-                    {
-                        Log.Logger.Here().Warning("SignalR connection close event was triggered but the exception is null; expected?");
-                    }
+
+                    Log.Logger.Here().Information("Recovering SignalR connection to {station}-{direction}...", station, direction);
+                    await Task.Delay(new Random().Next(1, 7) * 1000);
+                    await this.CreateHubConnection(tokenBrokerUrl, tokenValue, station, direction);
                 };
 
                 await connection.StartAsync();
-
+                
                 this.hubConnections.AddOrUpdate((station, direction), connection, (_, __) => connection);
             }
             catch (Exception ex)
             {
-                Log.Logger.Here().Error(ex, $"Attempt to create a new SignalR Hub connection for {station}-{direction} unexpectedly failed.");
+                Log.Logger.Here().Error(ex, "Attempt to create a new SignalR Hub connection for {station}-{direction} unexpectedly failed.", station, direction);
             }
         }
 
@@ -149,14 +158,16 @@
             }
             catch (Exception ex)
             {
-                Log.Logger.Here().Error(ex, $"Unexpected error reading a SignalR message for {station}-{direction}.");
+                Log.Logger.Here().Error(ex, "Unexpected error reading a SignalR message for {station}-{direction}.", station, direction);
             }
         }
 
         private async Task CloseExistingHubConnections()
         {
-            await Task.WhenAll(this.hubConnections.Values.Select(client => client.DisposeAsync()));
+            var connections = this.hubConnections.Values.ToArray(); //Materialize the connections
             this.hubConnections.Clear();
+
+            await Task.WhenAll(connections.Select(client => client.DisposeAsync()));
         }
 
         #region IDisposable Support

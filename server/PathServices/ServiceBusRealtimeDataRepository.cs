@@ -147,7 +147,7 @@ namespace PathApi.Server.PathServices
 
         private Task HandleMessageError(Station station, ExceptionReceivedEventArgs args)
         {
-            Log.Logger.Here().Warning(args.Exception, "Unexpected exception when handling a new Service Bus message.");
+            Log.Logger.Here().Warning(args.Exception, "Unexpected exception when handling a new Service Bus message for {station}.", station);
             return Task.CompletedTask;
         }
 
