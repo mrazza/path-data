@@ -44,11 +44,6 @@
             return Task.FromResult(this.GetRealtimeData(station, RouteDirection.ToNY).Union(this.GetRealtimeData(station, RouteDirection.ToNJ)).Where(data => data.DataExpiration > DateTime.UtcNow));
         }
 
-        public async Task CloseConnection()
-        {
-            await this.CreateHubConnections();
-        }
-
         private IEnumerable<RealtimeData> GetRealtimeData(Station station, RouteDirection direction)
         {
             return this.realtimeData.GetValueOrDefault((station, direction), new List<RealtimeData>());
@@ -164,7 +159,10 @@
 
         private async Task CloseExistingHubConnections()
         {
-            var connections = this.hubConnections.Values.ToArray(); //Materialize the connections
+            // Materialize the connections so we can clear the dictionary before disconnecting.
+            // Otherwise, we will reconnect before reinitializing the connection (potentially
+            // causing a loop if the token changes).
+            var connections = this.hubConnections.Values.ToArray();
             this.hubConnections.Clear();
 
             await Task.WhenAll(connections.Select(client => client.DisposeAsync()));
