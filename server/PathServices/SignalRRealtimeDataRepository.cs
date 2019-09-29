@@ -30,7 +30,7 @@
             this.pathApiClient = pathApiClient;
             this.hubConnections = new ConcurrentDictionary<(Station, RouteDirection), HubConnection>();
             this.realtimeData = new ConcurrentDictionary<(Station, RouteDirection), List<RealtimeData>>();
-            
+
             this.pathDataRepository.OnDataUpdate += this.PathSqlDbUpdated;
         }
 
@@ -66,7 +66,7 @@
                 RouteDirectionMappings.RouteDirectionToDirectionKey.Select(direction => this.CreateHubConnection(tokenBrokerUrl, tokenValue, station.Key, direction.Key))));
         }
 
-        private async Task CreateHubConnection(string tokenBrokerUrl, string tokenValue, Station station, RouteDirection direction)
+        private async Task CreateHubConnection(string tokenBrokerUrl, string tokenValue, Station station, RouteDirection direction, int sequentialFailures = 0)
         {
             SignalRToken token;
 
@@ -85,6 +85,12 @@
                         .GetAwaiter()
                         .GetResult());
 
+                async Task RetryConnection()
+                {
+                    await Task.Delay(new Random().Next(1, 7) * (1000 * Math.Min(sequentialFailures + 1, 5)));
+                    await this.CreateHubConnection(tokenBrokerUrl, tokenValue, station, direction, sequentialFailures + 1);
+                };
+
                 connection.Closed += async (e) =>
                 {
                     if (!this.hubConnections.ContainsKey((station, direction)))
@@ -98,12 +104,19 @@
                     }
 
                     Log.Logger.Here().Information("Recovering SignalR connection to {station}-{direction}...", station, direction);
-                    await Task.Delay(new Random().Next(1, 7) * 1000);
-                    await this.CreateHubConnection(tokenBrokerUrl, tokenValue, station, direction);
+                    await RetryConnection();
                 };
 
-                await connection.StartAsync();
-                
+                try
+                {
+                    await connection.StartAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log.Logger.Here().Warning(ex, "SignalR connection failed to start for {station}-{direction}...", station, direction);
+                    await RetryConnection();
+                }
+
                 this.hubConnections.AddOrUpdate((station, direction), connection, (_, __) => connection);
             }
             catch (Exception ex)
