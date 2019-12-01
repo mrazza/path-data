@@ -77,21 +77,14 @@ namespace PathApi.Server.PathServices
             this.updateTimer = new Timer(this.UpdateEvent, null, (int)this.refreshTimeSpan.TotalMilliseconds, (int)this.refreshTimeSpan.TotalMilliseconds);
         }
 
-        /// <summary>
-        /// Gets the encrypted service bus key from the PATH database.
-        /// </summary>
-        /// <returns>A task returning the encrypted service bus key.</returns>
-        public async Task<string> GetServiceBusKey()
-        {
-            using (await this.readerWriterLock.ReaderLockAsync())
-            {
-                this.AssertConnected();
-                SQLiteCommand command = this.sqliteConnection.CreateCommand();
-                command.CommandText = "SELECT configuration_value FROM tblConfigurationData WHERE configuration_key = @key;";
-                command.Parameters.AddWithValue("@key", this.flags.ServiceBusConfigurationKeyName);
-                return (string)await command.ExecuteScalarAsync();
-            }
-        }
+        /// <inheritdoc />
+        public Task<string> GetServiceBusKey() => this.GetConfigurationValue(this.flags.ServiceBusConfigurationKeyName);
+
+        /// <inheritdoc />
+        public Task<string> GetTokenBrokerUrl() => this.GetConfigurationValue(this.flags.TokenBrokerUrlKeyName);
+
+        /// <inheritdoc />
+        public Task<string> GetTokenValue() => this.GetConfigurationValue(this.flags.TokenValueKeyName);
 
         /// <summary>
         /// Gets information about the specified station.
@@ -319,7 +312,7 @@ namespace PathApi.Server.PathServices
             this.sqliteConnection = new SQLiteConnection($"Data Source={this.GetSqliteFilename(this.latestChecksum)};Read Only=True", true);
             this.sqliteConnection.Open();
             this.AssertConnected();
-            Log.Logger.Here().Information($"Database downloaded, connection established to {this.sqliteConnection.DataSource}.");
+            Log.Logger.Here().Information("Database downloaded, connection established to {dataSource}.", this.sqliteConnection.DataSource);
         }
 
         private string GetSqliteFilename(string checksum)
@@ -332,6 +325,18 @@ namespace PathApi.Server.PathServices
             if (this.sqliteConnection == null || this.sqliteConnection.State != ConnectionState.Open)
             {
                 throw new InvalidOperationException($"PATH SQL Database is not connected ({sqliteConnection?.State}). Are you making queries before startup has completed?");
+            }
+        }
+
+        private async Task<string> GetConfigurationValue(string key)
+        {
+            using (await this.readerWriterLock.ReaderLockAsync())
+            {
+                this.AssertConnected();
+                SQLiteCommand command = this.sqliteConnection.CreateCommand();
+                command.CommandText = "SELECT configuration_value FROM tblConfigurationData WHERE configuration_key = @key;";
+                command.Parameters.AddWithValue("@key", key);
+                return (string)await command.ExecuteScalarAsync();
             }
         }
 

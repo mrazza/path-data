@@ -127,7 +127,7 @@ namespace PathApi.Server.Tests.PathServices
         }
 
         [TestMethod]
-        public async Task Disposes()
+        public void Disposes()
         {
             this.fakePathDataRepository.TriggerUpdate();
 
@@ -150,7 +150,7 @@ namespace PathApi.Server.Tests.PathServices
                     message
                 }
             };
-            this.createdSubscriptions[StationMappings.StationToShortName[station]].subscription.SendMessage(new Message()
+            this.createdSubscriptions[StationMappings.StationToServiceBusTopic[station]].subscription.SendMessage(new Message()
             {
                 Label = direction.ToString(),
                 Body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(serviceBusMessage))
@@ -224,6 +224,16 @@ namespace PathApi.Server.Tests.PathServices
             }
 
             public Task<List<Stop>> GetStops(Station station)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<string> GetTokenBrokerUrl()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<string> GetTokenValue()
             {
                 throw new NotImplementedException();
             }

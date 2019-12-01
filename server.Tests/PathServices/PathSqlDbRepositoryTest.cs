@@ -72,7 +72,7 @@ namespace PathApi.Server.Tests.PathServices
                 }
 
                 var key = await dbRepository.GetServiceBusKey();
-                Assert.AreEqual("ovK3azy9In0GQLB9y5DjwxiObyBwalySZLofNssvHSQPsI4zwwczvtztPC50yWj4f7jww991EIn9qrKFivTdDfKUDgKjOUoZRv/UGO5EyC/MFs8mTvfC8d7Jbqv6DxSgAcNRbcXGYF0OKHBKvSE2vARZkEnzSf1jcQqxd3DPATN/g08ZIW0gxhVp2BXKYdYpiiq7+pWIObjfBHB0uR4taXY2YOliHbyNV5CosF91NK0tiJV+xxwcvPURH/82auB0fTQvvUZnkaaxUzq+9Pjlv3JfdeAFM/1PmTPN/Mfnz3aZ/2bOUYUX4gciBUNxprcsGQGQJivpjteaD2C+PkEGWcpB0btYYLdSkuVYnV/LFzrRZ/9eqLPkfz20yhl41eANgrGNPdNl2wEEBTAUjw+OeZJsJZIAcWu4vByW98oaYM0=", key);
+                Assert.AreEqual("ovK3azy9In0GQLB9y5Djw+VbfXLIpIrP+b1dxBkjCVGCBMTW/5PAnPIjz3GltF3sqPKq1CEhW78qEnMwWDieQZKYgOP8G9Mz54PgPpM3Q/ILVwk1B9FMA9LrSGgw+GO6kOXCXl4oUwAMx+nEVPBSl9EJhB/iCYsgtNZQiZuGD5qhUBqJuKQ6wMWLciA5zkvztmmYZlL3/VHLL4JiJsr3omTeG1OjQ/sMfUlrg6IgKmjXBwbZd9ezxfZrZedy1EQ2J076NM81iC9Szuy0YsMH9ReR2I1Yr6PSUXL3D6Twezu9QcSPnpDJc3XWUdThDOiJM9chogHcQl6fua3fg9bRhGOS4giyzOParxBTeGelczmlIUzlQpwOHxzFT0QxM8HmUwJYDfzoMij3FkDiyi47+3jnFshEYWO+aZOTiXGd8S4=", key);
             }
         }
 

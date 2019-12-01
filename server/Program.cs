@@ -3,7 +3,6 @@
     using CommandLine;
     using PathApi.Server.GrpcApi;
     using PathApi.Server.PathServices;
-    using PathApi.Server.PathServices.Azure;
     using Serilog;
     using SimpleInjector;
     using System.Reflection;
@@ -35,11 +34,10 @@
                 container.RegisterSingleton<PathSqlDbRepository>();
                 container.RegisterSingleton<IPathApiClient, PathApiClient>();
                 container.RegisterSingleton<IPathDataRepository, PathSqlDbRepository>();
-                container.RegisterSingleton<IServiceBusFactory, ServiceBusFactory>();
-                container.RegisterSingleton<IRealtimeDataRepository, ServiceBusRealtimeDataRepository>();
+                container.RegisterSingleton<IRealtimeDataRepository, SignalRRealtimeDataRepository>();
                 container.Collection.Register<IGrpcApi>(Assembly.GetExecutingAssembly());
                 container.Collection.Register<IStartupTask>(Assembly.GetExecutingAssembly());
-                container.RegisterInstance<Flags>(flags.Value);
+                container.RegisterInstance(flags.Value);
                 container.Verify();
 
                 // Execute startup tasks

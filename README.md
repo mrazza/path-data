@@ -6,7 +6,7 @@ This software is not endorsed nor supported by the Port Authority of New York an
 
 # Using This Software
 
-Prefer to use the publically exposed API (below) rather than running this software yourself. Due to Azure Service Bus subscriber limits, running this application without a static subscriber ID or with many subscriber IDs could consume the available topic subscriber quota. For this reason, running this software independently is not recommended. See [this article](https://medium.com/@mrazza/programmatic-path-real-time-arrival-data-5d0884ae1ad6#ab14) for more information.
+Prefer to use the publically exposed API (below) rather than running this software yourself. See [this article](https://medium.com/@mrazza/programmatic-path-real-time-arrival-data-5d0884ae1ad6#ab14) for more information.
 
 # Public APIs
 
@@ -237,4 +237,4 @@ A simple web app using the realtime arrival data can be found [here](https://jsf
 
 # Versioning
 
-New fields and features will continue to be added to `v1` of the API. No fields will be removed and no breaking changes will be made to `v1`. Any breaking changes will result in a version number increment and the previous API version will run along side the new version for at least 30 days. There are a number of external consumers of this API including [Transit](https://transitapp.com/) and [Citymapper](https://citymapper.com/).
+New fields and features will continue to be added to `v1` of the API. No fields will be removed and no breaking changes will be made to `v1`. Any breaking changes will result in a version number increment and the previous API version will run along side the new version for at least 30 days. There are a number of external consumers of this API including [Transit](https://transitapp.com/) and [Citymapper](https://citymapper.com/nyc).

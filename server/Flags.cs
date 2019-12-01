@@ -34,6 +34,12 @@ namespace PathApi.Server
         [Option("service_bus_configuration_key_name", Default = "rt_ServiceBusEndpoint_Prod", HelpText = "The name of the key in the tblConfigurationData table to read for the Azure Service Bus key.")]
         public string ServiceBusConfigurationKeyName { get; set; }
 
+        [Option("token_broker_url_key_name", Default = "rt_TokenBrokerUrl_Prod", HelpText = "The name of the key in the tblConfigurationData table to read for the JWT token broker URL.")]
+        public string TokenBrokerUrlKeyName { get; set; }
+
+        [Option("token_value_key_name", Default = "rt_TokenValue_Prod", HelpText = "The name of the key in the tblConfigurationData table to read for the token broker authorization header value.")]
+        public string TokenValueKeyName { get; set; }
+
         [Option("sql_update_check_frequency_secs", Default = 3600, HelpText = "The delay, in seconds, between checks for a new SQL database.")]
         public int SqlUpdateCheckFrequencySecs { get; set; }
         #endregion

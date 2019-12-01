@@ -68,9 +68,9 @@ namespace PathApi.Server.PathServices
         {
             await this.CloseExistingSubscriptions();
 
-            var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey());
+            var connectionString = Decryption.Decrypt(await this.pathDataRepository.GetServiceBusKey(), legacyKey: true);
             var managementClient = this.managementClientFactory.CreateManagementClient(connectionString);
-            await Task.WhenAll(StationMappings.StationToShortName.Select(station =>
+            await Task.WhenAll(StationMappings.StationToServiceBusTopic.Select(station =>
                 Task.Run(async () =>
                 {
                     try
@@ -147,7 +147,7 @@ namespace PathApi.Server.PathServices
 
         private Task HandleMessageError(Station station, ExceptionReceivedEventArgs args)
         {
-            Log.Logger.Here().Warning(args.Exception, "Unexpected exception when handling a new Service Bus message.");
+            Log.Logger.Here().Warning(args.Exception, "Unexpected exception when handling a new Service Bus message for {station}.", station);
             return Task.CompletedTask;
         }
 

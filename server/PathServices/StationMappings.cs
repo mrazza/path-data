@@ -12,7 +12,7 @@ namespace PathApi.Server.PathServices
         /// <summary>
         /// Dictionary mapping <see cref="Station"/> enums to short string values used by PATH.
         /// </summary>
-        public static readonly ReadOnlyDictionary<Station, string> StationToShortName =
+        public static readonly ReadOnlyDictionary<Station, string> StationToServiceBusTopic =
             new ReadOnlyDictionary<Station, string>(new Dictionary<Station, string>()
             {
                 { Station.Newark, "nwk" },
@@ -28,6 +28,24 @@ namespace PathApi.Server.PathServices
                 { Station.FourteenthStreet, "14s" },
                 { Station.TwentyThirdStreet, "23s" },
                 { Station.ThirtyThirdStreet, "33s" }
+            });
+
+        public static readonly ReadOnlyDictionary<Station, string> StationToSignalRTokenName =
+            new ReadOnlyDictionary<Station, string>(new Dictionary<Station, string>()
+            {
+                { Station.Newark, "Newark" },
+                { Station.Harrison, "Harrison" },
+                { Station.JournalSquare, "Journal Square" },
+                { Station.GroveStreet, "Grove Street" },
+                { Station.ExchangePlace, "Exchange Place" },
+                { Station.WorldTradeCenter, "World Trade Center" },
+                { Station.Newport, "Newport" },
+                { Station.Hoboken, "Hoboken" },
+                { Station.ChristopherStreet, "Christopher Street" },
+                { Station.NinthStreet, "9th Street" },
+                { Station.FourteenthStreet, "14th Street" },
+                { Station.TwentyThirdStreet, "23rd Street" },
+                { Station.ThirtyThirdStreet, "33rd Street" }
             });
 
         public static readonly ReadOnlyDictionary<Station, int> StationToDatabaseId =

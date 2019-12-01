@@ -1,11 +1,16 @@
 namespace PathApi.Server.PathServices
 {
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using PathApi.Server.PathServices.Models;
+    using PathApi.V1;
     using Serilog;
     using System;
     using System.IO;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -13,6 +18,7 @@ namespace PathApi.Server.PathServices
     /// </summary>
     internal sealed class PathApiClient : IPathApiClient
     {
+        private static readonly HttpClient SharedHttpClient = new HttpClient();
         private readonly Flags flags;
 
         /// <summary>
@@ -35,7 +41,7 @@ namespace PathApi.Server.PathServices
             string currentChecksum;
             while (lastChecksum != (currentChecksum = await this.CheckForDbUpdate(lastChecksum)))
             {
-                Log.Logger.Here().Information($"PATH DB checksum updated to {currentChecksum}.");
+                Log.Logger.Here().Information("PATH DB checksum updated to {currentChecksum}.", currentChecksum);
                 lastChecksum = currentChecksum;
             }
             return currentChecksum;
@@ -48,19 +54,39 @@ namespace PathApi.Server.PathServices
         /// <returns>A task returning a <see cref="Stream"/> to the binary representation of the PATH database.</returns>
         public async Task<Stream> GetDatabaseAsStream(string checksum)
         {
-            using (var httpClient = new HttpClient())
-            {
-                var httpRequestMessage = this.BuildGetRequest(new Uri(string.Format(this.flags.PathDbDownloadUrl, checksum)));
-                var httpResponse = await httpClient.SendAsync(httpRequestMessage);
+            var httpRequestMessage = this.BuildGetRequest(new Uri(string.Format(this.flags.PathDbDownloadUrl, checksum)));
+            var httpResponse = await SharedHttpClient.SendAsync(httpRequestMessage);
 
-                if (httpResponse.StatusCode != HttpStatusCode.OK)
-                {
-                    throw new HttpRequestException($"Invalid response from PATH API when downloading DB update: {httpResponse.StatusCode}");
-                }
-                else
-                {
-                    return await httpResponse.Content.ReadAsStreamAsync();
-                }
+            if (httpResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException($"Invalid response from PATH API when downloading DB update: {httpResponse.StatusCode}");
+            }
+            else
+            {
+                return await httpResponse.Content.ReadAsStreamAsync();
+            }
+        }
+
+        public async Task<SignalRToken> GetToken(string tokenBrokerUrl, string tokenValue, Station station, RouteDirection direction)
+        {
+            var request = new { station = StationMappings.StationToSignalRTokenName[station], direction = RouteDirectionMappings.RouteDirectionToDirectionKey[direction] };
+            var requestJson = JsonConvert.SerializeObject(request);
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, tokenBrokerUrl)
+            {
+                Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
+            };
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenValue);
+
+            var httpResponse = await SharedHttpClient.SendAsync(httpRequestMessage);
+
+            if (httpResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException($"Invalid response from PATH API when requesting JWT token: {httpResponse.StatusCode}");
+            }
+            else
+            {
+                var responseJson = await httpResponse.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<SignalRToken>(responseJson);
             }
         }
 
@@ -79,25 +105,22 @@ namespace PathApi.Server.PathServices
 
         private async Task<string> CheckForDbUpdate(string checksum)
         {
-            using (var httpClient = new HttpClient())
-            {
-                var httpRequestMessage = this.BuildGetRequest(new Uri(string.Format(this.flags.PathCheckDbUpdateUrl, checksum)));
-                var httpResponse = await httpClient.SendAsync(httpRequestMessage);
+            var httpRequestMessage = this.BuildGetRequest(new Uri(string.Format(this.flags.PathCheckDbUpdateUrl, checksum)));
+            var httpResponse = await SharedHttpClient.SendAsync(httpRequestMessage);
 
-                if (httpResponse.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return checksum;
-                }
-                else if (httpResponse.StatusCode == HttpStatusCode.OK)
-                {
-                    var stringResponse = await httpResponse.Content.ReadAsStringAsync();
-                    var jsonResponse = JObject.Parse(stringResponse);
-                    return jsonResponse["data"]?.ToObject<CheckDbUpdateResponse>()?.Checksum ?? checksum;
-                }
-                else
-                {
-                    throw new HttpRequestException($"Invalid response from PATH API when checking for DB update: {httpResponse.StatusCode}");
-                }
+            if (httpResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                return checksum;
+            }
+            else if (httpResponse.StatusCode == HttpStatusCode.OK)
+            {
+                var stringResponse = await httpResponse.Content.ReadAsStringAsync();
+                var jsonResponse = JObject.Parse(stringResponse);
+                return jsonResponse["data"]?.ToObject<CheckDbUpdateResponse>()?.Checksum ?? checksum;
+            }
+            else
+            {
+                throw new HttpRequestException($"Invalid response from PATH API when checking for DB update: {httpResponse.StatusCode}");
             }
         }
 

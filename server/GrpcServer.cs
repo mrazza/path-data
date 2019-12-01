@@ -50,9 +50,9 @@ namespace PathApi.Server
             }
 
             this.grpcServer.Start();
-            Log.Logger.Here().Information($"============================================================");
-            Log.Logger.Here().Information($"Server started on {flags.ServerHost}:{flags.ServerPort}!");
-            Log.Logger.Here().Information($"============================================================");
+            Log.Logger.Here().Information("============================================================");
+            Log.Logger.Here().Information("Server started on {host}:{port}!", flags.ServerHost, flags.ServerPort);
+            Log.Logger.Here().Information("============================================================");
             await this.latch.Task;
         }
 
