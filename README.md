@@ -238,3 +238,7 @@ A simple web app using the realtime arrival data can be found [here](https://jsf
 # Versioning
 
 New fields and features will continue to be added to `v1` of the API. No fields will be removed and no breaking changes will be made to `v1`. Any breaking changes will result in a version number increment and the previous API version will run along side the new version for at least 30 days. There are a number of external consumers of this API including [Transit](https://transitapp.com/) and [Citymapper](https://citymapper.com/nyc).
+
+# Other sources
+
+Project to convert this data into GTFS Realtime format: https://github.com/jamespfennell/path-train-gtfs-realtime
