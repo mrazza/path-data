@@ -1,0 +1,121 @@
+# Server Cluster/Pod configuration for the PATH Data API.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: path-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-path-api
+  namespace: path-api
+spec:
+  ports:
+  - port: 443
+    targetPort: 5001
+    protocol: TCP
+    name: http2
+  selector:
+    app: path-api-app
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-path-api
+  namespace: path-api
+spec:
+  ports:
+  - port: 80
+    targetPort: 51051
+    protocol: TCP
+    name: http
+  selector:
+    app: path-api-app
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-path-api
+  namespace: path-api
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/issuer: "letsencrypt-prod"
+    certmanager.k8s.io/acme-challenge-type: "http01"
+spec:
+  tls:
+  - hosts:
+    - path.api.razza.dev
+    secretName: path-ssl
+  rules:
+    - http:
+        paths:
+        - path: /v1/health
+          pathType: Exact
+          backend:
+            service:
+              name: http-path-api
+              port:
+                number: 80
+    - host: path.api.razza.dev
+      http:
+          paths:
+          - path: /v1/
+            pathType: Prefix
+            backend:
+              service:
+                name: http-path-api
+                port:
+                  number: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: path-api
+  namespace: path-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: path-api-app
+  template:
+    metadata:
+      labels:
+        app: path-api-app
+    spec:
+      containers:
+      - name: envoy
+        image: registry.digitalocean.com/razza/server:envoy-v5
+        ports:
+        - containerPort: 51051
+        livenessProbe:
+          httpGet:
+            path: "/v1/health"
+            port: 51051
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: "/v1/health"
+            port: 51051
+          initialDelaySeconds: 3
+          periodSeconds: 3
+      - name: path-api-server
+        image: registry.digitalocean.com/razza/server:v1.15
+        ports:
+        - containerPort: 5001
+        args:
+        - "--server_port=5001"
+        - "--service_bus_subscription_id=c7284d58-ba3c-4a51-9d8f-1fc201082408"
+        - "--special_headsign_mapping=Exchange Place=World Trade Center"
+        livenessProbe:
+          tcpSocket:
+            port: 5001
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          tcpSocket:
+            port: 5001
+          initialDelaySeconds: 3
+          periodSeconds: 3

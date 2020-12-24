@@ -4,63 +4,86 @@ package path_api.v1;
 
 // Full list of all PATH stations in the system.
 enum Station {
+    option allow_alias = true;
 
     STATION_UNSPECIFIED = 0;
 
     NEWARK = 1;
+    newark = 1 [ deprecated = true ];
 
     HARRISON = 2;
+    harrison = 2 [ deprecated = true ];
 
     JOURNAL_SQUARE = 3;
+    journal_square = 3 [ deprecated = true ];
 
     GROVE_STREET = 4;
+    grove_street = 4 [ deprecated = true ];
 
     EXCHANGE_PLACE = 5;
+    exchange_place = 5 [ deprecated = true ];
 
     WORLD_TRADE_CENTER = 6;
+    world_trade_center = 6 [ deprecated = true ];
 
     NEWPORT = 7;
+    newport = 7 [ deprecated = true ];
 
     HOBOKEN = 8;
+    hoboken = 8 [ deprecated = true ];
 
     CHRISTOPHER_STREET = 9;
+    christopher_street = 9 [ deprecated = true ];
 
     NINTH_STREET = 10;
+    ninth_street = 10 [ deprecated = true ];
 
     FOURTEENTH_STREET = 11;
+    fourteenth_street = 11 [ deprecated = true ];
 
     TWENTY_THIRD_STREET = 12;
+    twenty_third_street = 12 [ deprecated = true ];
 
     THIRTY_THIRD_STREET = 13;
+    thirty_third_street = 13  [ deprecated = true ];
 }
 
 // Full list of all routes within the system.
 enum Route {
+    option allow_alias = true;
 
     ROUTE_UNSPECIFIED = 0;
 
     // Journal Square to 33rd Street via Hoboken
     JSQ_33_HOB = 1;
+    jsq_33_hob = 1 [ deprecated = true ];
 
     // Hoboken to 33rd Street
     HOB_33 = 2;
+    hob_33 = 2 [ deprecated = true ];
 
     // Hoboken to World Trade Center
     HOB_WTC = 3;
+    hob_wtc = 3 [ deprecated = true ];
 
     // Journal Square to 33rd Street
     JSQ_33 = 4;
+    jsq_33 = 4 [ deprecated = true ];
 
     // Newark to World Trade Center
     NWK_WTC = 5;
+    nwk_wtc = 5 [ deprecated = true ];
 }
 
 // Directions trains can travel along routes.
 enum Direction {
+    option allow_alias = true;
 
     DIRECTION_UNSPECIFIED = 0;
 
     TO_NJ = 1;
+    to_nj = 1 [ deprecated = true ];
 
     TO_NY = 2;
+    to_ny = 2 [ deprecated = true ];
 }

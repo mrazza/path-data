@@ -8,7 +8,7 @@
     {
         static void Main(string[] args)
         {
-            Channel channel = new Channel("127.0.0.1:5001", ChannelCredentials.Insecure);
+            Channel channel = new Channel("path.grpc.razza.dev:443", ChannelCredentials.Insecure);
             var client = new Stations.StationsClient(channel);
             var rclient = new Routes.RoutesClient(channel);
             var reply = client.GetUpcomingTrains(new GetUpcomingTrainsRequest()
