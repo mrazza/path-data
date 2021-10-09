@@ -17,7 +17,7 @@ namespace PathApi.Server.GrpcApi.V1
     /// </summary>
     internal sealed class RoutesApi : Routes.RoutesBase, IGrpcApi
     {
-        private const int DEFUALT_PAGE_SIZE = 250;
+        private const int DEFAULT_PAGE_SIZE = 250;
         private readonly IPathDataRepository pathDataRepository;
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace PathApi.Server.GrpcApi.V1
         public override async Task<ListRoutesResponse> ListRoutes(ListRoutesRequest request, ServerCallContext context)
         {
             int offset = PaginationHelper.GetOffset(request.PageToken);
-            int pageSize = request.PageSize == 0 ? DEFUALT_PAGE_SIZE : request.PageSize;
+            int pageSize = request.PageSize == 0 ? DEFAULT_PAGE_SIZE : request.PageSize;
 
             ListRoutesResponse response = new ListRoutesResponse();
             var routes = await this.GetAllRoutes();

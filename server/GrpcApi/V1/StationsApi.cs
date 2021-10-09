@@ -18,7 +18,7 @@ namespace PathApi.Server.GrpcApi.V1
     /// </summary>
     internal sealed class StationsApi : Stations.StationsBase, IGrpcApi
     {
-        private const int DEFUALT_PAGE_SIZE = 250;
+        private const int DEFAULT_PAGE_SIZE = 250;
         private readonly IRealtimeDataRepository realtimeDataRepository;
         private readonly IPathDataRepository pathDataRepository;
 
@@ -68,7 +68,7 @@ namespace PathApi.Server.GrpcApi.V1
         public override async Task<ListStationsResponse> ListStations(ListStationsRequest request, ServerCallContext context)
         {
             int offset = PaginationHelper.GetOffset(request.PageToken);
-            int pageSize = request.PageSize == 0 ? DEFUALT_PAGE_SIZE : request.PageSize;
+            int pageSize = request.PageSize == 0 ? DEFAULT_PAGE_SIZE : request.PageSize;
 
             ListStationsResponse response = new ListStationsResponse();
             List<StationData> stations = new List<StationData>();
