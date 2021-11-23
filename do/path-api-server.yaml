@@ -86,7 +86,7 @@ spec:
     spec:
       containers:
       - name: envoy
-        image: registry.digitalocean.com/razza/server:envoy-v5
+        image: registry.digitalocean.com/razza/server:envoy-v6
         ports:
         - containerPort: 51051
         livenessProbe:

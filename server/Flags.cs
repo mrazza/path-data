@@ -17,17 +17,26 @@ namespace PathApi.Server
         #endregion
 
         #region PATH API Flags
-        [Option("path_db_update_url", Default = "https://path-mppprod-app.azurewebsites.net/api/v1/checkdbupdate?appVersion=3.0.0&checkSum={0}", HelpText = "Format URL for the PATH API database update check. The first argument ({0}) will be replaced by the checksum.")]
+        [Option("path_db_update_url", Default = "https://path-mppprod-app.azurewebsites.net/api/v1/Config/Fetch", HelpText = "Format URL for the PATH API database update check. The first argument ({0}) will be replaced by the checksum.")]
         public string PathCheckDbUpdateUrl { get; set; }
 
-        [Option("path_initial_checksum", Default = "C405CEFB9887554D47AD92334385E808", HelpText = "The initial checksum to use when calling the PATH database update API.")]
+        [Option("path_initial_checksum", Default = "3672A87A4D8E9104E736C3F61023F013", HelpText = "The initial checksum to use when calling the PATH database update API.")]
         public string InitialPathDbChecksum { get; set; }
 
         [Option("path_db_download_url", Default = "https://path-mppprod-app.azurewebsites.net/api/v1/file/clientdb?checksum={0}", HelpText = "Format URL used to download the latest PATH SQLite database. THe first argument ({0} will be the checksum of the database.")]
         public string PathDbDownloadUrl { get; set; }
 
-        [Option("path_api_key", Default = "44F41F65-7E93-4075-9BAE-BAAE2DFC90F3", HelpText = "API key to pass to the PATH HTTP API.")]
+        [Option("path_api_key", Default = "3CE6A27D-6A58-4CA5-A3ED-CE2EBAEFA166", HelpText = "API key to pass to the PATH HTTP API.")]
         public string PathApiKey { get; set; }
+
+        [Option("path_app_name", Default = "RidePATH", HelpText = "Name of the PATH App for use in HTTP calls.")]
+        public string PathAppName { get; set; }
+
+        [Option("path_app_version", Default = "4.3.0", HelpText = "Version of the PATH App for use in HTTP calls.")]
+        public string PathAppVersion { get; set; }
+
+        [Option("path_user_agent", Default = "okhttp/3.12.6", HelpText = "User agent for use in HTTP calls.")]
+        public string PathUserAgent { get; set; }
         #endregion
 
         #region PATH SQL Flags

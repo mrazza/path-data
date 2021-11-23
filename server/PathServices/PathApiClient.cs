@@ -98,14 +98,18 @@ namespace PathApi.Server.PathServices
                 RequestUri = uri,
                 Headers =
                 {
-                    { "APIKey", this.flags.PathApiKey }
+                    { "apikey", this.flags.PathApiKey },
+                    { "appname", this.flags.PathAppName },
+                    { "appversion", this.flags.PathAppVersion },
+                    { "user-agent", this.flags.PathUserAgent }
                 }
             };
         }
 
         private async Task<string> CheckForDbUpdate(string checksum)
         {
-            var httpRequestMessage = this.BuildGetRequest(new Uri(string.Format(this.flags.PathCheckDbUpdateUrl, checksum)));
+            var httpRequestMessage = this.BuildGetRequest(new Uri(this.flags.PathCheckDbUpdateUrl));
+            httpRequestMessage.Headers.Add("dbchecksum", checksum);
             var httpResponse = await SharedHttpClient.SendAsync(httpRequestMessage);
 
             if (httpResponse.StatusCode == HttpStatusCode.NotFound)
@@ -116,7 +120,7 @@ namespace PathApi.Server.PathServices
             {
                 var stringResponse = await httpResponse.Content.ReadAsStringAsync();
                 var jsonResponse = JObject.Parse(stringResponse);
-                return jsonResponse["data"]?.ToObject<CheckDbUpdateResponse>()?.Checksum ?? checksum;
+                return jsonResponse["Data"]?.ToObject<CheckDbUpdateResponse>()?.DbUpdate?.Checksum ?? checksum;
             }
             else
             {
@@ -126,8 +130,13 @@ namespace PathApi.Server.PathServices
 
         private sealed class CheckDbUpdateResponse
         {
-            public string Checksum { get; set; }
-            public string Description { get; set; }
+            public sealed class DbUpdateInfo
+            {
+                public string Checksum { get; set; }
+                public string Description { get; set; }
+            }
+
+            public DbUpdateInfo DbUpdate { get; set; }
         }
     }
 }

@@ -20,6 +20,11 @@ static_resources:
             virtual_hosts:
             - name: local_service
               domains: ["*"]
+              response_headers_to_add:
+              - header:
+                  key: "x-razza-hostname"
+                  value: "%HOSTNAME%"
+                append: true
               routes:
               - match: { prefix: "/", grpc: {} } 
                 route: { cluster: grpc-backend-services, timeout: { seconds: 60 } }  
