@@ -17,9 +17,12 @@ namespace PathApi.Server.Tests.PathServices
     [TestClass]
     public sealed class PathApiClientTest
     {
-        private const string UPDATE_URL = "http://127.0.0.1:8080/dbCheck?sum={0}";
+        private const string UPDATE_URL = "http://127.0.0.1:8080/dbCheck";
         private const string DATABASE_URL = "http://127.0.0.1:8080/dbDownload?sum={0}";
         private const string API_KEY = "duhbestapikey";
+        private const string APP_NAME = "duhbestapp";
+        private const string APP_VERSION = "duhlatestversion";
+        private const string USER_AGENT = "mytesthttpclient";
         private PathApiClient pathApiClient;
         private FakePathApi fakePathApi;
 
@@ -32,7 +35,10 @@ namespace PathApi.Server.Tests.PathServices
             {
                 PathCheckDbUpdateUrl = UPDATE_URL,
                 PathDbDownloadUrl = DATABASE_URL,
-                PathApiKey = API_KEY
+                PathApiKey = API_KEY,
+                PathAppName = APP_NAME,
+                PathAppVersion = APP_VERSION,
+                PathUserAgent = USER_AGENT,
             });
         }
 
@@ -45,17 +51,24 @@ namespace PathApi.Server.Tests.PathServices
         [TestMethod]
         public async Task UpdatesChecksum()
         {
-            var checksum = "12345";
-            var newChecksum = "abcde";
-            var newestChecksum = "efghj";
+            const string checksum = "12345";
+            const string newChecksum = "abcde";
+            const string newestChecksum = "efghj";
             this.fakePathApi.AddExpectedRequest(
-                string.Format(UPDATE_URL, checksum),
-                "{'data': { 'checksum': '" + newChecksum + "', 'description': 'UPDATED!' }}");
-            this.fakePathApi.AddExpectedRequest(
-                string.Format(UPDATE_URL, checksum),
-                "{'data': { 'checksum': '" + newestChecksum + "', 'description': 'UPDATED!' }}");
-            this.fakePathApi.AddExpectedRequest(
-                string.Format(UPDATE_URL, newestChecksum), null);
+                UPDATE_URL, (context) =>
+                {
+                    switch (context.Request.Headers["dbchecksum"])
+                    {
+                        case checksum:
+                            return "{'Data': { 'DbUpdate': { 'Checksum': '" + newChecksum + "', 'Description': 'UPDATED!' }}}";
+                        case newChecksum:
+                            return "{'Data': { 'DbUpdate': { 'Checksum': '" + newestChecksum + "', 'Description': 'UPDATED!' }}}";
+                        case newestChecksum:
+                            return null;
+                    }
+
+                    throw new ArgumentException("Unexpected checksum!");
+                });
 
             var latestChecksum = await this.pathApiClient.GetLatestChecksum(checksum);
             Assert.AreEqual(newestChecksum, latestChecksum);
@@ -64,18 +77,24 @@ namespace PathApi.Server.Tests.PathServices
         [TestMethod]
         public async Task UpdatesChecksum_NullData()
         {
-            var checksum = "12345";
-            var newChecksum = "abcde";
-            var newestChecksum = "efghj";
+            const string checksum = "12345";
+            const string newChecksum = "abcde";
+            const string newestChecksum = "efghj";
             this.fakePathApi.AddExpectedRequest(
-                string.Format(UPDATE_URL, checksum),
-                "{'data': { 'checksum': '" + newChecksum + "', 'description': 'UPDATED!' }}");
-            this.fakePathApi.AddExpectedRequest(
-                string.Format(UPDATE_URL, checksum),
-                "{'data': { 'checksum': '" + newestChecksum + "', 'description': 'UPDATED!' }}");
-            this.fakePathApi.AddExpectedRequest(
-                string.Format(UPDATE_URL, newestChecksum), "{'data': null}");
+                UPDATE_URL, (context) =>
+                {
+                    switch (context.Request.Headers["dbchecksum"])
+                    {
+                        case checksum:
+                            return "{'Data': { 'DbUpdate': { 'Checksum': '" + newChecksum + "', 'Description': 'UPDATED!' }}}";
+                        case newChecksum:
+                            return "{'Data': { 'DbUpdate': { 'Checksum': '" + newestChecksum + "', 'Description': 'UPDATED!' }}}";
+                        case newestChecksum:
+                            return "{'Data': null}";
+                    }
 
+                    throw new ArgumentException("Unexpected checksum!");
+                });
             var latestChecksum = await this.pathApiClient.GetLatestChecksum(checksum);
             Assert.AreEqual(newestChecksum, latestChecksum);
         }

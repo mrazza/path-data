@@ -20,13 +20,13 @@ namespace PathApi.Server.Tests.PathServices
     internal sealed class FakePathApi : IDisposable
     {
         private HttpListener httpListener;
-        private Dictionary<string, string> httpResponses;
+        private Dictionary<string, Func<HttpListenerContext, string>> httpResponses;
         private string apiKey;
 
         public FakePathApi(int port, string apiKey)
         {
             this.apiKey = apiKey;
-            this.httpResponses = new Dictionary<string, string>();
+            this.httpResponses = new Dictionary<string, Func<HttpListenerContext, string>>();
             this.httpListener = new HttpListener();
             this.httpListener.Prefixes.Add($"http://+:{port}/");
         }
@@ -39,7 +39,23 @@ namespace PathApi.Server.Tests.PathServices
 
         public void AddExpectedRequest(string url, string response)
         {
-            this.httpResponses[url] = response;
+            this.AddExpectedRequest(url, (_) => response);
+        }
+
+        public void AddExpectedRequest(string url, Func<HttpListenerContext, string> responseResolver)
+        {
+            this.httpResponses[url] = responseResolver;
+        }
+
+        private static void RequireHeader(HttpListenerContext context, string header, string value)
+        {
+            if (context.Request.Headers[header] != value)
+            {
+                context.Response.StatusCode = 500;
+                context.Response.ContentLength64 = 0;
+                context.Response.OutputStream.Close();
+                throw new InvalidOperationException(string.Format("Bad or missing header {0}.", header));
+            }
         }
 
         private void HandleHttpRequest(IAsyncResult asyncResult)
@@ -47,19 +63,14 @@ namespace PathApi.Server.Tests.PathServices
             try
             {
                 var context = this.httpListener.EndGetContext(asyncResult);
-                if (context.Request.Headers["APIKey"] != this.apiKey)
-                {
-                    context.Response.StatusCode = 500;
-                    context.Response.ContentLength64 = 0;
-                    context.Response.OutputStream.Close();
-                    throw new InvalidOperationException("Bad API key.");
-                }
+                RequireHeader(context, "apikey", this.apiKey);
 
                 var url = context.Request.Url.ToString();
 
                 if (this.httpResponses.ContainsKey(url))
                 {
-                    if (this.httpResponses[url] == null)
+                    var result = this.httpResponses[url](context);
+                    if (result == null)
                     {
                         context.Response.ContentLength64 = 0;
                         context.Response.StatusCode = 404;
@@ -67,7 +78,7 @@ namespace PathApi.Server.Tests.PathServices
                     }
                     else
                     {
-                        var response = Encoding.UTF8.GetBytes(this.httpResponses[url]);
+                        var response = Encoding.UTF8.GetBytes(result);
                         context.Response.ContentLength64 = response.Length;
                         context.Response.SendChunked = false;
                         context.Response.StatusCode = 200;

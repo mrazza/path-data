@@ -72,7 +72,7 @@ namespace PathApi.Server.GrpcApi.V1
 
             ListStationsResponse response = new ListStationsResponse();
             List<StationData> stations = new List<StationData>();
-            foreach (var station in (System.Enum.GetValues(typeof(Station)) as Station[]).Where((station) => station != Station.Unspecified))
+            foreach (var station in (System.Enum.GetValues(typeof(Station)) as Station[]).Where((station) => station != Station.Unspecified).Distinct())
             {
                 try
                 {
