@@ -102,7 +102,7 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 3
       - name: path-api-server
-        image: registry.digitalocean.com/razza/server:v1.16
+        image: registry.digitalocean.com/razza/server:v1.17
         ports:
         - containerPort: 5001
         args:

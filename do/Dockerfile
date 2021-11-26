@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/runtime:2.2
+FROM mcr.microsoft.com/dotnet/runtime:5.0
 ADD ./ /app
 WORKDIR /app
 ENTRYPOINT [ "dotnet", "PathApi.Server.dll" ]
