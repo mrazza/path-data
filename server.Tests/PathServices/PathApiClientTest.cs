@@ -1,7 +1,10 @@
 namespace PathApi.Server.Tests.PathServices
 {
+    using Newtonsoft.Json.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using PathApi.Server.PathServices;
+    using PathApi.Server.PathServices.Models;
+    using PathApi.V1;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -19,6 +22,7 @@ namespace PathApi.Server.Tests.PathServices
     {
         private const string UPDATE_URL = "http://127.0.0.1:8080/dbCheck";
         private const string DATABASE_URL = "http://127.0.0.1:8080/dbDownload?sum={0}";
+        private const string TOKEN_URL = "http://127.0.0.1:8080/token";
         private const string API_KEY = "duhbestapikey";
         private const string APP_NAME = "duhbestapp";
         private const string APP_VERSION = "duhlatestversion";
@@ -110,6 +114,43 @@ namespace PathApi.Server.Tests.PathServices
 
             var databaseStream = await this.pathApiClient.GetDatabaseAsStream(checksum);
             Assert.AreEqual(databaseContent, new StreamReader(databaseStream).ReadToEnd());
+        }
+
+        [TestMethod]
+        public async Task GetsSignalRToken()
+        {
+            const string StationString = "Grove Street";
+            const string DirectionString = "New York";
+            const string AUTH_TOKEN = "AUTHTHISMYDUDE";
+            const string ResponseUrl = "http://path.com";
+            const string ResponseToken = "muhtoken";
+            this.fakePathApi.AddExpectedRequest(TOKEN_URL, (context) =>
+            {
+                if (context.Request.Headers["Authorization"] != string.Format("Bearer {0}", AUTH_TOKEN))
+                {
+                    throw new ArgumentException("Missing authorization header.");
+                }
+
+                using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
+                {
+                    var obj = JObject.Parse(reader.ReadToEnd());
+
+                    if (obj["station"].Value<string>() != StationString)
+                    {
+                        throw new ArgumentException("Unexpected station.");
+                    }
+                    if (obj["direction"].Value<string>() != DirectionString)
+                    {
+                        throw new ArgumentException("Unexpected direction.");
+                    }
+                }
+
+                return "{ 'url': '" + ResponseUrl + "', 'accesstoken': '" + ResponseToken + "', 'message': 'urmessage' }";
+            }, false);
+
+            var token = await this.pathApiClient.GetToken(TOKEN_URL, AUTH_TOKEN, Station.GroveStreet, RouteDirection.ToNY);
+            Assert.AreEqual(ResponseUrl, token.Url);
+            Assert.AreEqual(ResponseToken, token.AccessToken);
         }
     }
 }

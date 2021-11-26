@@ -18,13 +18,15 @@ namespace PathApi.Server.GrpcApi
             {
                 return 0;
             }
-            
-            if (!int.TryParse(Encoding.UTF8.GetString(Convert.FromBase64String(pageToken)), out int offset))
+
+            try
+            {
+                return int.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(pageToken)));
+            }
+            catch
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Malformed page token."));
             }
-
-            return offset;
         }
 
         /// <summary>

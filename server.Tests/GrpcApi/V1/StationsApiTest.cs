@@ -212,6 +212,32 @@ namespace PathApi.Server.Tests.GrpcApi
         }
 
         [TestMethod]
+        public async Task ListStations_MalformedPagination()
+        {
+            var response = await this.stationsApi.ListStations(new ListStationsRequest()
+            {
+                PageSize = 1
+            }, null);
+            var expected = new ListStationsResponse()
+            {
+                Stations =
+                {
+                    EXPECTED_NEWARK_STATION
+                }
+            };
+            Assert.AreEqual(expected.Stations, response.Stations);
+            Assert.IsNotNull(response.NextPageToken);
+            Assert.AreNotEqual(string.Empty, response.NextPageToken);
+
+            RpcException exception = await Assert.ThrowsExceptionAsync<RpcException>(async () => await this.stationsApi.ListStations(new ListStationsRequest()
+            {
+                PageSize = 1,
+                PageToken = "SOMEGARBO"
+            }, null));
+            Assert.AreEqual(StatusCode.InvalidArgument, exception.StatusCode);
+        }
+
+        [TestMethod]
         public async Task GetStation()
         {
             var response = await this.stationsApi.GetStation(new GetStationRequest()

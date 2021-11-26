@@ -42,9 +42,20 @@ namespace PathApi.Server.Tests.PathServices
             this.AddExpectedRequest(url, (_) => response);
         }
 
-        public void AddExpectedRequest(string url, Func<HttpListenerContext, string> responseResolver)
+        public void AddExpectedRequest(string url, Func<HttpListenerContext, string> responseResolver, bool requireApiKey = true)
         {
-            this.httpResponses[url] = responseResolver;
+            if (requireApiKey)
+            {
+                this.httpResponses[url] = (context) =>
+                {
+                    RequireHeader(context, "apikey", this.apiKey);
+                    return responseResolver(context);
+                };
+            }
+            else
+            {
+                this.httpResponses[url] = responseResolver;
+            }
         }
 
         private static void RequireHeader(HttpListenerContext context, string header, string value)
@@ -63,13 +74,24 @@ namespace PathApi.Server.Tests.PathServices
             try
             {
                 var context = this.httpListener.EndGetContext(asyncResult);
-                RequireHeader(context, "apikey", this.apiKey);
-
                 var url = context.Request.Url.ToString();
 
                 if (this.httpResponses.ContainsKey(url))
                 {
-                    var result = this.httpResponses[url](context);
+                    string result;
+
+                    try
+                    {
+                        result = this.httpResponses[url](context);
+                    }
+                    catch (Exception e)
+                    {
+                        context.Response.StatusCode = 500;
+                        context.Response.ContentLength64 = 0;
+                        context.Response.OutputStream.Close();
+                        throw;
+                    }
+
                     if (result == null)
                     {
                         context.Response.ContentLength64 = 0;
