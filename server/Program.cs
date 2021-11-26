@@ -35,6 +35,8 @@
                 container.RegisterSingleton<IPathApiClient, PathApiClient>();
                 container.RegisterSingleton<IPathDataRepository, PathSqlDbRepository>();
                 container.RegisterSingleton<IRealtimeDataRepository, SignalRRealtimeDataRepository>();
+                container.Register<StartupTaskExecutor>();
+                container.Register<GrpcServer>();
                 container.Collection.Register<IGrpcApi>(Assembly.GetExecutingAssembly());
                 container.Collection.Register<IStartupTask>(Assembly.GetExecutingAssembly());
                 container.RegisterInstance(flags.Value);

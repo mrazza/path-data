@@ -178,7 +178,7 @@
             var connections = this.hubConnections.Values.ToArray();
             this.hubConnections.Clear();
 
-            await Task.WhenAll(connections.Select(client => client.DisposeAsync()));
+            await Task.WhenAll(connections.Select(async (client) => await client.DisposeAsync()));
         }
 
         #region IDisposable Support

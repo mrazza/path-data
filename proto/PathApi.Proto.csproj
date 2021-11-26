@@ -1,18 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Grpc" Version="1.19.0"/>
-    <PackageReference Include="Grpc.Tools" Version="1.19.0"/>
-    <PackageReference Include="Google.Protobuf" Version="3.7.0"/>
-    <PackageReference Include="Google.Protobuf.Tools" Version="3.7.0"/>
-    <PackageReference Include="Google.Api.Gax.Grpc" Version="2.7.0-beta01"/>
-  </ItemGroup>
-  <ItemGroup>
-    <Protobuf Include="common.proto" Link="common.proto"/>
-    <Protobuf Include="stations.proto" Link="stations.proto"/>
-    <Protobuf Include="routes.proto" Link="routes.proto"/>
-    <Protobuf Include="server.proto" Link="server.proto"/>
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Grpc" Version="2.42.0"/>
+    <!--
+      Using an old version of Grpc.Tools as the latest versions mistakening treat WARNINGs as ERRORs
+      during proto compilation. https://github.com/grpc/grpc/issues/27502
+    -->
+		<PackageReference Include="Grpc.Tools" Version="1.19.0"/>
+		<PackageReference Include="Google.Protobuf" Version="3.19.1"/>
+		<PackageReference Include="Google.Protobuf.Tools" Version="3.19.1"/>
+		<PackageReference Include="Google.Api.Gax.Grpc" Version="3.5.0"/>
+	</ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="common.proto" Link="common.proto"/>
+		<Protobuf Include="stations.proto" Link="stations.proto"/>
+		<Protobuf Include="routes.proto" Link="routes.proto"/>
+		<Protobuf Include="server.proto" Link="server.proto"/>
+	</ItemGroup>
 </Project>

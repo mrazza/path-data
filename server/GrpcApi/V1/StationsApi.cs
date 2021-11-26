@@ -178,7 +178,7 @@ namespace PathApi.Server.GrpcApi.V1
             return upcomingTrain;
         }
 
-        private Timestamp ToTimestamp(DateTime dateTime)
+        private Timestamp ToTimestamp(System.DateTime dateTime)
         {
             return new Timestamp()
             {
