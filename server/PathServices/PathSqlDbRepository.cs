@@ -154,16 +154,23 @@ namespace PathApi.Server.PathServices
                 {
                     while (await reader.ReadAsync())
                     {
-                        routes.Add(new RouteLine()
+                        try
                         {
-                            Route = RouteMappings.DatabaseIdToRoute[reader.GetString(0)],
-                            Id = reader.GetString(0),
-                            LongName = reader.GetString(1),
-                            DisplayName = reader.GetString(2),
-                            Headsign = reader.GetString(3),
-                            Color = reader.GetString(4),
-                            Direction = (RouteDirection)int.Parse(reader.GetString(5))
-                        });
+                            routes.Add(new RouteLine()
+                            {
+                                Route = RouteMappings.DatabaseIdToRoute[reader.GetString(0)],
+                                Id = reader.GetString(0),
+                                LongName = reader.GetString(1),
+                                DisplayName = reader.GetString(2),
+                                Headsign = reader.GetString(3),
+                                Color = reader.GetString(4),
+                                Direction = (RouteDirection)int.Parse(reader.GetString(5))
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Logger.Here().Warning(e, "Unexpecting error when building RouteLine.");
+                        }
                     }
                     return routes;
                 }

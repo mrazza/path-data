@@ -73,6 +73,10 @@ enum Route {
     // Newark to World Trade Center
     NWK_WTC = 5;
     nwk_wtc = 5 [ deprecated = true ];
+
+    // Newport to Hoboken Shuttle Train
+    NPT_HOB = 6;
+    npt_hob = 6 [ deprecated = true ];
 }
 
 // Directions trains can travel along routes.

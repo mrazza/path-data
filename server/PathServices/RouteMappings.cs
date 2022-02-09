@@ -20,7 +20,8 @@ namespace PathApi.Server.PathServices
                 { "859", Route.Hob33 },
                 { "860", Route.HobWtc },
                 { "861", Route.Jsq33 },
-                { "862", Route.NwkWtc }
+                { "862", Route.NwkWtc },
+                { "11048", Route.NptHob }
             });
 
         public static readonly ReadOnlyDictionary<RouteDirection, Direction> RouteDirectionToDirection =
