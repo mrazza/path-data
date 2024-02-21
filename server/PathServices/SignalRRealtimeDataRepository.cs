@@ -105,7 +105,7 @@ namespace PathApi.Server.PathServices
 
                 var connection = new HubConnectionBuilder()
                     .WithUrl(token.Url, c => c.AccessTokenProvider = () => Task.FromResult(token.AccessToken))
-                    .WithAutomaticReconnect(new RetryPolicy())
+                    .WithAutomaticReconnect(new RetryPolicy(station, direction))
                     .Build();
 
                 connection.KeepAliveInterval = this.KEEP_ALIVE_INTERVAL;
