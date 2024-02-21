@@ -9,7 +9,9 @@ namespace PathApi.Server.PathServices
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -17,7 +19,7 @@ namespace PathApi.Server.PathServices
     /// </summary>
     internal sealed class SignalRRealtimeDataRepository : IRealtimeDataRepository, IDisposable
     {
-        private readonly TimeSpan KEEP_ALIVE_INTERVAL = TimeSpan.FromTicks(5 * (long)10e6); // 5s
+        private readonly TimeSpan KEEP_ALIVE_INTERVAL = TimeSpan.FromSeconds(5);
         private readonly IPathDataRepository pathDataRepository;
         private readonly IPathApiClient pathApiClient;
         private readonly ConcurrentDictionary<(Station, RouteDirection), HubConnection> hubConnections;
@@ -60,10 +62,11 @@ namespace PathApi.Server.PathServices
         private IEnumerable<RealtimeData> GetRealtimeData(Station station, RouteDirection direction)
         {
             Log.Logger.Here().Debug("Getting realtime data for {station}-{direction}...", station, direction);
-            var startTimestamp = DateTime.UtcNow;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             var emptyRealtimeData = ImmutableList.Create<RealtimeData>();
             var realtimeDataResult = this.realtimeData.GetValueOrDefault((station, direction), emptyRealtimeData);
-            var endTimestamp = DateTime.UtcNow;
+            stopWatch.Stop();
             if (realtimeDataResult.Count() != 0)
             {
                 Log.Logger.Here().Debug("Got {count} realtime dataPoint(s) for {station}-{direction}", realtimeDataResult.Count(), station, direction);
@@ -71,7 +74,7 @@ namespace PathApi.Server.PathServices
             {
                 Log.Logger.Here().Information("Got no realtime dataPoint for {station}-{direction}, this might indicate a problem either on the server or the client side", station, direction);
             }
-            Log.Logger.Here().Information("Get realtime data for {station}-{direction} took {timespan:G}", station, direction, endTimestamp - startTimestamp);
+            Log.Logger.Here().Information("Get realtime data for {station}-{direction} took {timespan:G}", station, direction, stopWatch.Elapsed);
             return realtimeDataResult;
         }
 
@@ -114,8 +117,7 @@ namespace PathApi.Server.PathServices
                         .GetAwaiter()
                         .GetResult());
 
-                connection.Closed += async (e) =>
-                {
+                connection.Closed += async (e) => {
                     if (!this.hubConnections.ContainsKey((station, direction)))
                     {
                         return;
@@ -126,7 +128,8 @@ namespace PathApi.Server.PathServices
                         Log.Logger.Here().Warning(e, "SignalR connection was closed as a result of an exception");
                     }
 
-                    // Log.Logger.Here().Information("Recovering SignalR connection to {station}-{direction}...", station, direction);
+                    // Disable warning: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
+                    await Task.CompletedTask;
                 };
 
                 try
@@ -140,7 +143,6 @@ namespace PathApi.Server.PathServices
 
                 this.hubConnections.AddOrUpdate((station, direction), connection, (key, existingConnection) =>
                 {
-
                     return connection;
                 });
             }
@@ -212,7 +214,7 @@ namespace PathApi.Server.PathServices
                     var filteredUpdatedImmutableData = ImmutableList.Create(updatedImmutableData.Where(updatedDataPoint => updatedDataPoint.DataExpiration > DateTime.UtcNow).ToArray());
                     if (filteredUpdatedImmutableData.Count() != updatedImmutableData.Count())
                     {
-                        Log.Logger.Here().Warning("{count} dataPoint(s) in updatedData are removed for S:{station} D:{direction} as they are expired", updatedImmutableData.Count() - filteredUpdatedImmutableData.Count(), station, direction);
+                        Log.Logger.Here().Warning("{removedCount} dataPoint(s) out of {totalCount} in updatedData are removed for S:{station} D:{direction} as they are expired", updatedImmutableData.Count() - filteredUpdatedImmutableData.Count(), updatedImmutableData.Count(), station, direction);
                     } else
                     {
                         // return existing data will improve performance
