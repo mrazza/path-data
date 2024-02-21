@@ -1,4 +1,4 @@
-﻿namespace PathApi.Server.PathServices
+namespace PathApi.Server.PathServices
 {
     using Microsoft.AspNetCore.SignalR.Client;
     using Newtonsoft.Json;
@@ -8,6 +8,8 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
 
@@ -16,10 +18,11 @@
     /// </summary>
     internal sealed class SignalRRealtimeDataRepository : IRealtimeDataRepository, IDisposable
     {
+        private readonly TimeSpan KEEP_ALIVE_INTERVAL = TimeSpan.FromSeconds(5);
         private readonly IPathDataRepository pathDataRepository;
         private readonly IPathApiClient pathApiClient;
         private readonly ConcurrentDictionary<(Station, RouteDirection), HubConnection> hubConnections;
-        private readonly ConcurrentDictionary<(Station, RouteDirection), List<RealtimeData>> realtimeData;
+        private readonly ConcurrentDictionary<(Station, RouteDirection), ImmutableList<RealtimeData>> realtimeData;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="SignalRRealtimeDataRepository"/>.
@@ -29,7 +32,7 @@
             this.pathDataRepository = pathDataRepository;
             this.pathApiClient = pathApiClient;
             this.hubConnections = new ConcurrentDictionary<(Station, RouteDirection), HubConnection>();
-            this.realtimeData = new ConcurrentDictionary<(Station, RouteDirection), List<RealtimeData>>();
+            this.realtimeData = new ConcurrentDictionary<(Station, RouteDirection), ImmutableList<RealtimeData>>();
 
             this.pathDataRepository.OnDataUpdate += this.PathSqlDbUpdated;
         }
@@ -41,12 +44,37 @@
         /// <returns>A collection of arriving trains.</returns>
         public Task<IEnumerable<RealtimeData>> GetRealtimeData(Station station)
         {
-            return Task.FromResult(this.GetRealtimeData(station, RouteDirection.ToNY).Union(this.GetRealtimeData(station, RouteDirection.ToNJ)).Where(data => data.DataExpiration > DateTime.UtcNow));
+            var allData = this.GetRealtimeData(station, RouteDirection.ToNY).Union(this.GetRealtimeData(station, RouteDirection.ToNJ));
+            var freshData = allData.Where(dataPoint => dataPoint.DataExpiration > DateTime.UtcNow);
+            if (allData.Count() != freshData.Count())
+            {
+                var staledData = allData.Except(freshData);
+                foreach (var staledDataPoint in staledData)
+                    Log.Logger.Here().Warning("Staled data detected for S:{station} R:{route} with timestamp {updatedDataLastUpdated}, force reconnect maybe needed", station, staledDataPoint.Route.DisplayName, staledDataPoint.LastUpdated);
+
+                Log.Logger.Here().Information("Recreating SignalR hubs following staled data detection...");
+                Task.Run(this.CreateHubConnections).Wait();
+            }
+            return Task.FromResult(freshData);
         }
 
         private IEnumerable<RealtimeData> GetRealtimeData(Station station, RouteDirection direction)
         {
-            return this.realtimeData.GetValueOrDefault((station, direction), new List<RealtimeData>());
+            Log.Logger.Here().Debug("Getting realtime data for {station}-{direction}...", station, direction);
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var emptyRealtimeData = ImmutableList.Create<RealtimeData>();
+            var realtimeDataResult = this.realtimeData.GetValueOrDefault((station, direction), emptyRealtimeData);
+            stopWatch.Stop();
+            if (realtimeDataResult.Count() != 0)
+            {
+                Log.Logger.Here().Debug("Got {count} realtime dataPoint(s) for {station}-{direction}", realtimeDataResult.Count(), station, direction);
+            } else
+            {
+                Log.Logger.Here().Information("Got no realtime dataPoint for {station}-{direction}, this might indicate a problem either on the server or the client side", station, direction);
+            }
+            Log.Logger.Here().Information("Get realtime data for {station}-{direction} took {timespan:G}", station, direction, stopWatch.Elapsed);
+            return realtimeDataResult;
         }
 
         private void PathSqlDbUpdated(object sender, EventArgs args)
@@ -66,7 +94,7 @@
                 RouteDirectionMappings.RouteDirectionToDirectionKey.Select(direction => this.CreateHubConnection(tokenBrokerUrl, tokenValue, station.Key, direction.Key))));
         }
 
-        private async Task CreateHubConnection(string tokenBrokerUrl, string tokenValue, Station station, RouteDirection direction, int sequentialFailures = 0)
+        private async Task CreateHubConnection(string tokenBrokerUrl, string tokenValue, Station station, RouteDirection direction)
         {
             SignalRToken token;
 
@@ -77,7 +105,10 @@
 
                 var connection = new HubConnectionBuilder()
                     .WithUrl(token.Url, c => c.AccessTokenProvider = () => Task.FromResult(token.AccessToken))
+                    .WithAutomaticReconnect(new RetryPolicy(station, direction))
                     .Build();
+
+                connection.KeepAliveInterval = this.KEEP_ALIVE_INTERVAL;
 
                 connection.On<string, string>("SendMessage", (_, json) =>
                     this.ProcessNewMessage(station, direction, json)
@@ -85,14 +116,7 @@
                         .GetAwaiter()
                         .GetResult());
 
-                async Task RetryConnection()
-                {
-                    await Task.Delay(new Random().Next(1, 7) * (1000 * Math.Min(sequentialFailures + 1, 5)));
-                    await this.CreateHubConnection(tokenBrokerUrl, tokenValue, station, direction, sequentialFailures + 1);
-                };
-
-                connection.Closed += async (e) =>
-                {
+                connection.Closed += async (e) => {
                     if (!this.hubConnections.ContainsKey((station, direction)))
                     {
                         return;
@@ -103,8 +127,8 @@
                         Log.Logger.Here().Warning(e, "SignalR connection was closed as a result of an exception");
                     }
 
-                    Log.Logger.Here().Information("Recovering SignalR connection to {station}-{direction}...", station, direction);
-                    await RetryConnection();
+                    // Disable warning: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
+                    await Task.CompletedTask;
                 };
 
                 try
@@ -114,10 +138,12 @@
                 catch (Exception ex)
                 {
                     Log.Logger.Here().Warning(ex, "SignalR connection failed to start for {station}-{direction}...", station, direction);
-                    await RetryConnection();
                 }
 
-                this.hubConnections.AddOrUpdate((station, direction), connection, (_, __) => connection);
+                this.hubConnections.AddOrUpdate((station, direction), connection, (key, existingConnection) =>
+                {
+                    return connection;
+                });
             }
             catch (Exception ex)
             {
@@ -137,8 +163,9 @@
                 }
                 catch (Exception) { /* Ignore. */ }
 
+                Log.Logger.Here().Debug("SignalR Hub ProcessNewMessage for {station}-{direction}...", station, direction);
 
-                List<RealtimeData> newData = (await Task.WhenAll(messageBody.Messages.Select(async realtimeMessage =>
+                var newImmtubaleData = (await Task.WhenAll(messageBody.Messages.Select(async realtimeMessage =>
                 {
                     var realtimeData = new RealtimeData()
                     {
@@ -161,8 +188,39 @@
                     }
                     realtimeData.Route = route;
                     return realtimeData;
-                }))).ToList();
-                this.realtimeData.AddOrUpdate((station, direction), newData, (ignored, oldData) => newData[0].LastUpdated > oldData[0].LastUpdated ? newData : oldData);
+                }))).ToImmutableList();
+
+                this.realtimeData.AddOrUpdate((station, direction), newImmtubaleData, (key, oldImmutableData) => {
+                    var latestNewDataPointLastUpdated = DateTimeOffset.FromUnixTimeSeconds(0).DateTime; // 1970 epoch
+                    foreach (var newDataPoint in newImmtubaleData) {
+                        if (newDataPoint.LastUpdated > latestNewDataPointLastUpdated)
+                        {
+                            latestNewDataPointLastUpdated = newDataPoint.LastUpdated;
+                        }
+                        if (newDataPoint.DataExpiration <= DateTime.UtcNow)
+                        {
+                            Log.Logger.Here().Warning("Staled dataPoint received for S:{station} D:{direction} with timestamp {lastUpdated} expires at {expiration}", station, direction, newDataPoint.LastUpdated, newDataPoint.DataExpiration);
+                        }
+                    }
+                    
+                    var updatedImmutableData = newImmtubaleData;
+                    var oldDataNewerThanNewDataLastUpdatedCount = oldImmutableData.Where(oldDataPoint => oldDataPoint.LastUpdated > latestNewDataPointLastUpdated).Count();
+                    if (oldDataNewerThanNewDataLastUpdatedCount > 0)
+                    {
+                        Log.Logger.Here().Warning("{count} dataPoint(s) in oldData are newer than newData for S:{station} D:{direction}, keeping oldData instead", oldDataNewerThanNewDataLastUpdatedCount, station, direction);
+                        updatedImmutableData = oldImmutableData;
+                    }
+                    var filteredUpdatedImmutableData = updatedImmutableData.Where(updatedDataPoint => updatedDataPoint.DataExpiration > DateTime.UtcNow).ToImmutableList();
+                    if (filteredUpdatedImmutableData.Count() != updatedImmutableData.Count())
+                    {
+                        Log.Logger.Here().Warning("{removedCount} dataPoint(s) out of {totalCount} in updatedData are removed for S:{station} D:{direction} as they are expired", updatedImmutableData.Count() - filteredUpdatedImmutableData.Count(), updatedImmutableData.Count(), station, direction);
+                    } else
+                    {
+                        // return existing data will improve performance
+                        filteredUpdatedImmutableData = updatedImmutableData;
+                    }
+                    return filteredUpdatedImmutableData;
+                });
             }
             catch (Exception ex)
             {
