@@ -9,7 +9,7 @@ namespace PathApi.Server.PathServices
         public TimeSpan? NextRetryDelay(RetryContext retryContext)
         {
             Log.Logger.Here().Warning("SignalR connection retrying because of {retryReason}, total retry count {previousRetryCount}", retryContext.RetryReason, retryContext.PreviousRetryCount);
-            return TimeSpan.FromTicks(new Random().Next(1, 4) * Math.Min(retryContext.PreviousRetryCount + 1, 5) * (long)10e6);
+            return TimeSpan.FromSeconds(new Random().Next(1, 4) * Math.Min(retryContext.PreviousRetryCount + 1, 5));
         }
     }
 }
