@@ -22,7 +22,7 @@
             {
                 // Setup Logging
                 Log.Logger = new LoggerConfiguration()
-                    .MinimumLevel.Information()
+                    .MinimumLevel.Debug()
                     .Enrich.FromLogContext()
                     .WriteTo.Console(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level}] ({FilePath}.{MemberName}:{LineNumber}) {Message}{NewLine}{Exception}")
                     .CreateLogger();
