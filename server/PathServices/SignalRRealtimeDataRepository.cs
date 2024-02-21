@@ -11,7 +11,6 @@ namespace PathApi.Server.PathServices
     using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -166,7 +165,7 @@ namespace PathApi.Server.PathServices
 
                 Log.Logger.Here().Debug("SignalR Hub ProcessNewMessage for {station}-{direction}...", station, direction);
 
-                var newImmtubaleData = ImmutableList.Create((await Task.WhenAll(messageBody.Messages.Select(async realtimeMessage =>
+                var newImmtubaleData = (await Task.WhenAll(messageBody.Messages.Select(async realtimeMessage =>
                 {
                     var realtimeData = new RealtimeData()
                     {
@@ -189,7 +188,7 @@ namespace PathApi.Server.PathServices
                     }
                     realtimeData.Route = route;
                     return realtimeData;
-                }))).ToArray());
+                }))).ToImmutableList();
 
                 this.realtimeData.AddOrUpdate((station, direction), newImmtubaleData, (key, oldImmutableData) => {
                     var latestNewDataPointLastUpdated = DateTimeOffset.FromUnixTimeSeconds(0).DateTime; // 1970 epoch
@@ -211,7 +210,7 @@ namespace PathApi.Server.PathServices
                         Log.Logger.Here().Warning("{count} dataPoint(s) in oldData are newer than newData for S:{station} D:{direction}, keeping oldData instead", oldDataNewerThanNewDataLastUpdatedCount, station, direction);
                         updatedImmutableData = oldImmutableData;
                     }
-                    var filteredUpdatedImmutableData = ImmutableList.Create(updatedImmutableData.Where(updatedDataPoint => updatedDataPoint.DataExpiration > DateTime.UtcNow).ToArray());
+                    var filteredUpdatedImmutableData = updatedImmutableData.Where(updatedDataPoint => updatedDataPoint.DataExpiration > DateTime.UtcNow).ToImmutableList();
                     if (filteredUpdatedImmutableData.Count() != updatedImmutableData.Count())
                     {
                         Log.Logger.Here().Warning("{removedCount} dataPoint(s) out of {totalCount} in updatedData are removed for S:{station} D:{direction} as they are expired", updatedImmutableData.Count() - filteredUpdatedImmutableData.Count(), updatedImmutableData.Count(), station, direction);
